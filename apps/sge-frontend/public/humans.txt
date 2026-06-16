@@ -1,0 +1,17 @@
+/* TEAM */
+Developer & Architect: A2LT Soluciones
+Website: https://a2lt.netlify.app
+Contact: contacto@a2lt.com
+Location: Venezuela / Remote
+
+/* TECHNOLOGY */
+Framework: Astro 5 (SSR)
+Styling: Tailwind CSS v4 (Oxide Engine, CSS-First @theme)
+Runtime: Cloudflare Workers (Hono)
+Database: Cloudflare D1 (SQLite)
+Storage: Cloudflare R2
+Language: TypeScript
+
+/* SITE */
+Last update: 2026/06/16
+Standards: HTML5, CSS3, WAI-ARIA

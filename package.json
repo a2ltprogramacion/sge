@@ -1,0 +1,35 @@
+{
+  "name": "sge",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,html,astro}\"",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "turbo run db:migrate",
+    "db:migrate:remote": "turbo run db:migrate:remote",
+    "db:seed": "turbo run db:seed",
+    "db:seed:remote": "turbo run db:seed:remote"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^3.70.0",
+    "prettier": "^3.3.0",
+    "eslint": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint-plugin-astro": "^1.2.0",
+    "eslint-plugin-jsx-a11y": "^6.9.0"
+  },
+  "packageManager": "npm@10.8.0",
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

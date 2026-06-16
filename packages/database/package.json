@@ -1,0 +1,16 @@
+{
+  "name": "@sge/database",
+  "version": "0.0.1",
+  "private": true,
+  "files": [
+    "migrations",
+    "seeds",
+    "schema.sql"
+  ],
+  "scripts": {
+    "migrate:local": "wrangler d1 migrations apply sge-db-prod --local",
+    "migrate:remote": "wrangler d1 migrations apply sge-db-prod --remote",
+    "seed:local": "wrangler d1 execute sge-db-prod --local --file=./seeds/seed-all.sql",
+    "seed:remote": "wrangler d1 execute sge-db-prod --remote --file=./seeds/seed-all.sql"
+  }
+}

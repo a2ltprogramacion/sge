@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /docente/
+Disallow: /representante/
+Disallow: /login
+
+Sitemap: https://sge.pages.dev/sitemap-index.xml

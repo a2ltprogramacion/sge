@@ -1,0 +1,39 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".astro/**", ".wrangler/**"]
+    },
+    "test": {
+      "outputs": ["coverage/**"],
+      "dependsOn": []
+    },
+    "lint": {
+      "outputs": []
+    },
+    "format": {
+      "outputs": []
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:migrate:remote": {
+      "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    },
+    "db:seed:remote": {
+      "cache": false
+    }
+  },
+  "globalEnv": ["NODE_ENV", "WRANGLER_SEND_METRICS", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
+}

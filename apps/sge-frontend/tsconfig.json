@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "types": ["astro/client", "vite/client", "vitest/globals"]
+  },
+  "include": ["src/**/*", "astro.config.mjs", "vite-env.d.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist", ".astro", ".wrangler"]
+}

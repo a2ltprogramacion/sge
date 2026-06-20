@@ -7,6 +7,8 @@ import { calificacionesRouter } from "./routes/calificaciones";
 import { asistenciaRouter } from "./routes/asistencia";
 import { pagosRouter } from "./routes/pagos";
 import { pushRouter } from "./routes/push";
+import { dashboardRouter } from "./routes/dashboard";
+import { reportesRouter } from "./routes/reportes";
 import { authMiddleware } from "./middleware/auth";
 import { requireRoles } from "./middleware/rbac";
 
@@ -78,13 +80,10 @@ app.route("/api/pagos", pagosRouter);
 // 6. Rutas de Web Push (Suscripciones + Clave Pública VAPID)
 app.route("/api/push", pushRouter);
 
-// 6. Dashboard Institucional (Solo Admin)
-app.get("/api/dashboard/salud", authMiddleware(), requireRoles(["ADMINISTRADOR"]), (c) => {
-  return c.json({
-    status: "OK",
-    detalle: "Dashboard institucional de salud académica operativo.",
-    timestamp: new Date().toISOString()
-  });
-});
+// 7. Dashboard Analítico (Solo Admin)
+app.route("/api/dashboard", dashboardRouter);
+
+// 8. Reportes y Boletines
+app.route("/api/reportes", reportesRouter);
 
 export default app;

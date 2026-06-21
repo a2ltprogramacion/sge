@@ -9,9 +9,6 @@ export default defineConfig({
   output: 'server',
   site: 'https://sge.pages.dev',
   vite: {
-    plugins: [tailwindcss()],
-    ssr: {
-      external: ['@astrojs/cloudflare']
-    }
+    plugins: [tailwindcss()]
   }
 });

@@ -117,21 +117,18 @@ import Layout from '@/layouts/Layout.astro';
   </main>
 </Layout>
 
-<script is:inline>
-  import { login, logout } from '@/lib/api';
+<script>
+  import { login } from '@/lib/api';
 
   const form = document.getElementById('login-form') as HTMLFormElement;
+  const formElement = form;
   const emailInput = document.getElementById('email') as HTMLInputElement;
   const passwordInput = document.getElementById('password') as HTMLInputElement;
   const togglePassword = document.getElementById('toggle-password') as HTMLButtonElement;
   const eyeOpen = document.getElementById('eye-open') as SVGElement;
   const eyeClosed = document.getElementById('eye-closed') as SVGElement;
-  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
-  const btnText = document.getElementById('btn-text') as HTMLElement;
-  const btnSpinner = document.getElementById('btn-spinner') as SVGElement;
   const errorContainer = document.getElementById('error-container') as HTMLDivElement;
   const errorMessage = document.getElementById('error-message') as HTMLElement;
-  const formElement = document.getElementById('login-form') as HTMLFormElement;
 
   // Toggle password visibility
   togglePassword.addEventListener('click', () => {
@@ -196,9 +193,6 @@ import Layout from '@/layouts/Layout.astro';
     }
 
     try {
-      // Importar dinámicamente el módulo de API
-      const { login } = await import('/lib/api');
-      
       const response = await login({ email, password });
       
       // Redirección según rol

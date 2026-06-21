@@ -1,48 +1,65 @@
-// Crypto utilities for PBKDF2 password hashing using Web Crypto API
+/**
+ * Utilidades criptográficas de alto rendimiento para el Edge (Cloudflare Workers).
+ * Implementa PBKDF2-SHA256 con sal única y comparación de hashes en tiempo constante.
+ */
 
-const ITERATIONS = 100_000;
-const KEY_LENGTH = 256;
-const HASH_ALGORITHM = 'SHA-256';
+/**
+ * Deriva una clave PBKDF2-SHA256 a partir de una contraseña plana y un UUID como sal.
+ * @param password Contraseña plana provista por el usuario.
+ * @param userId UUID v4 del usuario que actuará como sal única para evitar colisiones.
+ * @returns Hash hexadecimal de 64 caracteres.
+ */
+export async function hashPassword(password: string, userId: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const passwordBuffer = encoder.encode(password);
+  const saltBuffer = encoder.encode(userId);
 
-const encoder = new TextEncoder();
-
-export async function hashPassword(password: string, salt?: string): Promise<{ hash: string; salt: string }> {
-  const saltBytes = salt ? encoder.encode(salt) : crypto.getRandomValues(new Uint8Array(16));
-  const saltStr = Array.from(saltBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(password),
-    'PBKDF2',
+  // Importar la contraseña plana como clave cruda de derivación
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    passwordBuffer,
+    "PBKDF2",
     false,
-    ['deriveBits']
+    ["deriveBits"]
   );
 
+  // Derivar 256 bits (32 bytes) usando PBKDF2 con 100,000 iteraciones y SHA-256
   const derivedBits = await crypto.subtle.deriveBits(
     {
-      name: 'PBKDF2',
-      salt: saltBytes,
-      iterations: ITERATIONS,
-      hash: HASH_ALGORITHM,
+      name: "PBKDF2",
+      salt: saltBuffer,
+      iterations: 100000,
+      hash: "SHA-256"
     },
-    keyMaterial,
-    KEY_LENGTH
+    baseKey,
+    256
   );
 
-  const hash = Array.from(new Uint8Array(derivedBits))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-
-  return { hash, salt: saltStr };
+  // Convertir el buffer de bytes resultante a una cadena hexadecimal estricta
+  const hashArray = Array.from(new Uint8Array(derivedBits));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-export async function verifyPassword(password: string, hash: string, salt: string): Promise<boolean> {
-  const { hash: computedHash } = await hashPassword(password, salt);
-  return computedHash === hash;
-}
+/**
+ * Compara de forma segura (tiempo constante) una contraseña plana contra un hash guardado.
+ * Mitiga ataques de canal lateral (Timing Attacks) que analizan tiempos de respuesta.
+ * @param password Contraseña plana provista en la solicitud de login.
+ * @param userId UUID del usuario, utilizado como sal.
+ * @param storedHash Hash hexadecimal guardado en la base de datos.
+ * @returns Promesa que resuelve a booleano indicando si la contraseña es válida.
+ */
+export async function verifyPassword(password: string, userId: string, storedHash: string): Promise<boolean> {
+  const computedHash = await hashPassword(password, userId);
+  
+  if (computedHash.length !== storedHash.length) {
+    return false;
+  }
 
-export function generateSalt(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  // Comparación por operación binaria XOR para evitar cortocircuitos de evaluación
+  let result = 0;
+  for (let i = 0; i < computedHash.length; i++) {
+    result |= computedHash.charCodeAt(i) ^ storedHash.charCodeAt(i);
+  }
+
+  return result === 0;
 }

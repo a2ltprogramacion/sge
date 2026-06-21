@@ -1,0 +1,262 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
+---
+
+<Layout title="Dashboard Administrativo" description="Panel de control administrativo">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="ADMINISTRADOR" userName={`${user.nombres} ${user.apellidos}`} />
+
+    <div class="max-w-6xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-main mb-2">Dashboard Administrativo</h1>
+        <p class="text-text-muted">Panel de control general del instituto</p>
+      </div>
+
+      <div id="stats-row" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="card animate-pulse"><div class="card-body"><div class="h-10 bg-bg-alt rounded"></div></div></div>
+        <div class="card animate-pulse"><div class="card-body"><div class="h-10 bg-bg-alt rounded"></div></div></div>
+        <div class="card animate-pulse"><div class="card-body"><div class="h-10 bg-bg-alt rounded"></div></div></div>
+        <div class="card animate-pulse"><div class="card-body"><div class="h-10 bg-bg-alt rounded"></div></div></div>
+      </div>
+
+      <div id="alertas-section" class="hidden mb-8">
+        <h2 class="text-xl font-semibold text-text-main mb-4">Alertas de Riesgo</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="text-lg font-semibold text-text-main">Docentes con alta reprobación</h3>
+            </div>
+            <div class="card-body p-0">
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead>
+                    <tr class="text-left text-text-muted text-sm border-b border-border">
+                      <th class="px-4 py-3 font-medium">Docente</th>
+                      <th class="px-4 py-3 font-medium">Asignatura</th>
+                      <th class="px-4 py-3 font-medium">Sección</th>
+                      <th class="px-4 py-3 font-medium text-center">Promedio</th>
+                      <th class="px-4 py-3 font-medium text-center">% Reprobación</th>
+                    </tr>
+                  </thead>
+                  <tbody id="docentes-atipicos-tbody" class="divide-y divide-border"></tbody>
+                </table>
+              </div>
+              <div id="docentes-empty" class="text-center py-8 text-text-muted hidden">
+                <p>No hay alertas de docentes atípicos</p>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3 class="text-lg font-semibold text-text-main">Estudiantes con riesgo de abandono</h3>
+            </div>
+            <div class="card-body p-0">
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead>
+                    <tr class="text-left text-text-muted text-sm border-b border-border">
+                      <th class="px-4 py-3 font-medium">Estudiante</th>
+                      <th class="px-4 py-3 font-medium">Sección</th>
+                      <th class="px-4 py-3 font-medium text-center">Ausencias</th>
+                      <th class="px-4 py-3 font-medium text-center">Total Clases</th>
+                      <th class="px-4 py-3 font-medium text-center">% Inasistencia</th>
+                    </tr>
+                  </thead>
+                  <tbody id="riesgo-abandono-tbody" class="divide-y divide-border"></tbody>
+                </table>
+              </div>
+              <div id="abandono-empty" class="text-center py-8 text-text-muted hidden">
+                <p>No hay estudiantes con riesgo de abandono</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="salud-financiera-section" class="hidden mb-8">
+        <h2 class="text-xl font-semibold text-text-main mb-4">Salud Financiera por Sección</h2>
+        <div class="card">
+          <div class="card-body p-0">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="text-left text-text-muted text-sm border-b border-border">
+                    <th class="px-4 py-3 font-medium">Sección</th>
+                    <th class="px-4 py-3 font-medium text-center">Total Alumnos</th>
+                    <th class="px-4 py-3 font-medium text-center">Morosos</th>
+                    <th class="px-4 py-3 font-medium text-center">Solventes</th>
+                    <th class="px-4 py-3 font-medium text-center">% Solvencia</th>
+                  </tr>
+                </thead>
+                <tbody id="salud-financiera-tbody" class="divide-y divide-border"></tbody>
+              </table>
+            </div>
+            <div id="financiera-empty" class="text-center py-8 text-text-muted hidden">
+              <p>No hay datos financieros disponibles</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="loading-state" class="text-center py-8 text-text-muted">
+        <p>Cargando dashboard...</p>
+      </div>
+      <div id="error-state" class="hidden text-center py-8 text-error-600">
+        <p id="error-message">Error al cargar datos del dashboard.</p>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { apiGet } from '@/lib/api';
+
+  const statsRow = document.getElementById('stats-row');
+  const alertasSection = document.getElementById('alertas-section');
+  const saludFinancieraSection = document.getElementById('salud-financiera-section');
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorMessage = document.getElementById('error-message');
+
+  function showError(msg) {
+    loadingState.classList.add('hidden');
+    errorState.classList.remove('hidden');
+    errorMessage.textContent = msg;
+  }
+
+  function renderMetricas(metricas) {
+    statsRow.innerHTML = `
+      <div class="card">
+        <div class="card-body">
+          <p class="text-sm text-text-muted mb-1">Estudiantes Activos</p>
+          <p class="text-3xl font-bold text-text-main">${metricas.total_estudiantes_activos ?? 0}</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <p class="text-sm text-text-muted mb-1">Docentes</p>
+          <p class="text-3xl font-bold text-text-main">${metricas.total_docentes ?? 0}</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <p class="text-sm text-text-muted mb-1">Promedio General</p>
+          <p class="text-3xl font-bold text-text-main">${metricas.promedio_general_instituto ?? '—'}</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <p class="text-sm text-text-muted mb-1">Morosidad Global</p>
+          <p class="text-3xl font-bold text-error-600">${metricas.porcentaje_morosidad_global ?? 0}%</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDocentesAtipicos(docentes) {
+    const tbody = document.getElementById('docentes-atipicos-tbody');
+    const empty = document.getElementById('docentes-empty');
+
+    if (!docentes || docentes.length === 0) {
+      tbody.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    tbody.innerHTML = docentes.map(d => `
+      <tr class="hover:bg-bg-alt">
+        <td class="px-4 py-3 font-medium text-text-main">${d.docente_nombre}</td>
+        <td class="px-4 py-3 text-text-main">${d.asignatura_nombre}</td>
+        <td class="px-4 py-3 text-text-main">${d.seccion}</td>
+        <td class="px-4 py-3 text-center text-text-main">${d.promedio_notas}</td>
+        <td class="px-4 py-3 text-center">
+          <span class="${d.porcentaje_reprobacion > 50 ? 'text-error-600 font-bold' : 'text-warning-600'}">${d.porcentaje_reprobacion}%</span>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderRiesgoAbandono(estudiantes) {
+    const tbody = document.getElementById('riesgo-abandono-tbody');
+    const empty = document.getElementById('abandono-empty');
+
+    if (!estudiantes || estudiantes.length === 0) {
+      tbody.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    tbody.innerHTML = estudiantes.map(e => `
+      <tr class="hover:bg-bg-alt">
+        <td class="px-4 py-3 font-medium text-text-main">${e.estudiante_nombre}</td>
+        <td class="px-4 py-3 text-text-main">${e.seccion}</td>
+        <td class="px-4 py-3 text-center text-error-600 font-medium">${e.total_ausencias}</td>
+        <td class="px-4 py-3 text-center text-text-main">${e.total_clases}</td>
+        <td class="px-4 py-3 text-center">
+          <span class="${e.tasa_inasistencia > 25 ? 'text-error-600 font-bold' : 'text-warning-600'}">${e.tasa_inasistencia}%</span>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderSaludFinanciera(secciones) {
+    const tbody = document.getElementById('salud-financiera-tbody');
+    const empty = document.getElementById('financiera-empty');
+
+    if (!secciones || secciones.length === 0) {
+      tbody.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    tbody.innerHTML = secciones.map(s => `
+      <tr class="hover:bg-bg-alt">
+        <td class="px-4 py-3 font-medium text-text-main">${s.seccion}</td>
+        <td class="px-4 py-3 text-center text-text-main">${s.total_alumnos}</td>
+        <td class="px-4 py-3 text-center text-error-600 font-medium">${s.alumnos_morosos}</td>
+        <td class="px-4 py-3 text-center text-success-600 font-medium">${s.alumnos_solventes}</td>
+        <td class="px-4 py-3 text-center">
+          <span class="${s.porcentaje_solvencia >= 80 ? 'text-success-600' : s.porcentaje_solvencia >= 50 ? 'text-warning-600' : 'text-error-600'} font-bold">${s.porcentaje_solvencia}%</span>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function loadDashboard() {
+    try {
+      const data = await apiGet('/api/dashboard/salud');
+
+      renderMetricas(data.metricas_globales);
+
+      if (data.alertas_docentes_atipicos?.length > 0 || data.alertas_riesgo_abandono?.length > 0) {
+        alertasSection.classList.remove('hidden');
+        renderDocentesAtipicos(data.alertas_docentes_atipicos || []);
+        renderRiesgoAbandono(data.alertas_riesgo_abandono || []);
+      }
+
+      if (data.salud_financiera_secciones?.length > 0) {
+        saludFinancieraSection.classList.remove('hidden');
+        renderSaludFinanciera(data.salud_financiera_secciones);
+      }
+
+      loadingState.classList.add('hidden');
+    } catch (err) {
+      showError('Error al cargar dashboard: ' + err.message);
+    }
+  }
+
+  loadDashboard();
+</script>

@@ -1,0 +1,264 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
+---
+
+<Layout title="Historial de Asistencia" description="Historial de asistencia del estudiante">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="REPRESENTANTE" userName={`${user.nombres} ${user.apellidos}`} />
+    
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-main mb-2">Historial de Asistencia</h1>
+        <p class="text-text-muted">Consulta el control de asistencia de tu representado</p>
+      </div>
+
+      <div class="card mb-8" id="student-selector-card">
+        <div class="card-body">
+          <label class="label" for="matricula-select">Estudiante</label>
+          <select id="matricula-select" class="input">
+            <option value="">Cargando estudiantes...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card mb-8 hidden" id="asistencia-stats-card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold text-text-main">Resumen de Asistencia</h2>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="text-center p-3 bg-bg-alt rounded-lg">
+              <p class="text-2xl font-bold text-text-main" id="stats-total">0</p>
+              <p class="text-sm text-text-muted">Clases Totales</p>
+            </div>
+            <div class="text-center p-3 bg-success-50 rounded-lg">
+              <p class="text-2xl font-bold text-success-600" id="stats-presentes">0</p>
+              <p class="text-sm text-text-muted">Presentes</p>
+            </div>
+            <div class="text-center p-3 bg-error-50 rounded-lg">
+              <p class="text-2xl font-bold text-error-600" id="stats-ausencias">0</p>
+              <p class="text-sm text-text-muted">Ausencias</p>
+            </div>
+            <div class="text-center p-3 bg-warning-50 rounded-lg">
+              <p class="text-2xl font-bold text-warning-600" id="stats-justificados">0</p>
+              <p class="text-sm text-text-muted">Justificados</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-8 hidden" id="asistencia-table-card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold text-text-main">Registro de Asistencia</h2>
+        </div>
+        <div class="card-body">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="text-left text-text-muted text-sm">
+                  <th class="pb-3 font-medium">Fecha</th>
+                  <th class="pb-3 font-medium">Asignatura</th>
+                  <th class="pb-3 font-medium">Estado</th>
+                  <th class="pb-3 font-medium">Observación</th>
+                  <th class="pb-3 font-medium text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border" id="asistencia-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="loading-state" class="text-center py-8 text-text-muted">
+        <p>Cargando datos de asistencia...</p>
+      </div>
+      <div id="error-state" class="hidden text-center py-8 text-error-600">
+        <p id="error-message">Error al cargar datos de asistencia.</p>
+      </div>
+
+      <div id="justificar-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="card max-w-md w-full mx-4">
+          <div class="card-header">
+            <h3 class="text-lg font-semibold text-text-main">Justificar Ausencia</h3>
+          </div>
+          <div class="card-body">
+            <label class="label" for="justificar-observacion">Observación</label>
+            <textarea id="justificar-observacion" class="input mb-4" rows="3" placeholder="Describe el motivo de la justificación..."></textarea>
+            <div class="flex gap-2 justify-end">
+              <button id="justificar-cancelar" class="btn btn-secondary">Cancelar</button>
+              <button id="justificar-confirmar" class="btn btn-primary">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { apiGet, apiPost, apiFetch } from '@/lib/api';
+
+  const matriculaSelect = document.getElementById('matricula-select');
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorMessage = document.getElementById('error-message');
+
+  let currentAsistenciaId = null;
+
+  function showError(msg) {
+    loadingState.classList.add('hidden');
+    errorState.classList.remove('hidden');
+    errorMessage.textContent = msg;
+  }
+
+  async function loadStudents() {
+    try {
+      const data = await apiGet('/api/representante/mis-estudiantes');
+      const estudiantes = data.estudiantes || data;
+
+      if (!estudiantes.length) {
+        showError('No tienes estudiantes asociados. Contacta a la administración.');
+        return;
+      }
+
+      matriculaSelect.innerHTML = estudiantes.map(e =>
+        `<option value="${e.matricula_id}">${e.nombres} ${e.apellidos} - ${e.nivel}-${e.seccion}</option>`
+      ).join('');
+
+      matriculaSelect.removeEventListener('change', loadAsistencia);
+      matriculaSelect.addEventListener('change', loadAsistencia);
+
+      loadAsistencia();
+    } catch (err) {
+      showError('Error al cargar estudiantes: ' + err.message);
+    }
+  }
+
+  async function loadAsistencia() {
+    const matriculaId = matriculaSelect.value;
+    if (!matriculaId) return;
+
+    loadingState.classList.remove('hidden');
+    errorState.classList.add('hidden');
+
+    try {
+      const data = await apiGet(`/api/asistencia/estudiante/${matriculaId}`);
+      renderAsistencia(data);
+      loadingState.classList.add('hidden');
+    } catch (err) {
+      showError('Error al cargar asistencia: ' + err.message);
+    }
+  }
+
+  function renderAsistencia(data) {
+    const registros = data.registros || data.asistencias || data;
+
+    const stats = {
+      total: registros.length || 0,
+      presentes: registros.filter(r => r.estado === 'PRESENTE').length || 0,
+      ausencias: registros.filter(r => r.estado === 'AUSENTE').length || 0,
+      justificados: registros.filter(r => r.estado === 'JUSTIFICADO').length || 0,
+    };
+
+    document.getElementById('stats-total').textContent = stats.total;
+    document.getElementById('stats-presentes').textContent = stats.presentes;
+    document.getElementById('stats-ausencias').textContent = stats.ausencias;
+    document.getElementById('stats-justificados').textContent = stats.justificados;
+    document.getElementById('asistencia-stats-card').classList.remove('hidden');
+
+    const tbody = document.getElementById('asistencia-tbody');
+
+    tbody.innerHTML = registros.map(r => {
+      const badgeClass = {
+        'PRESENTE': 'badge badge-success',
+        'AUSENTE': 'badge badge-error',
+        'JUSTIFICADO': 'badge badge-warning',
+      }[r.estado] || 'badge';
+
+      const estadoLabel = {
+        'PRESENTE': 'Presente',
+        'AUSENTE': 'Ausente',
+        'JUSTIFICADO': 'Justificado',
+      }[r.estado] || r.estado;
+
+      const showJustificar = r.estado === 'AUSENTE';
+
+      return `
+        <tr class="hover:bg-bg-alt">
+          <td class="py-3 text-text-main">${r.fecha || r.fecha_asistencia || '—'}</td>
+          <td class="py-3 font-medium text-text-main">${r.asignatura || r.materia || '—'}</td>
+          <td class="py-3"><span class="${badgeClass}">${estadoLabel}</span></td>
+          <td class="py-3 text-text-muted text-sm">${r.observacion || r.observaciones || '—'}</td>
+          <td class="py-3 text-center">${showJustificar ? `<button class="btn btn-sm btn-outline btn-justificar" data-asistencia-id="${r.id || r.asistencia_id}">Justificar</button>` : '—'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    document.getElementById('asistencia-table-card').classList.remove('hidden');
+
+    document.querySelectorAll('.btn-justificar').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentAsistenciaId = btn.dataset.asistenciaId;
+        document.getElementById('justificar-modal').classList.remove('hidden');
+        document.getElementById('justificar-observacion').value = '';
+      });
+    });
+  }
+
+  document.getElementById('justificar-cancelar')?.addEventListener('click', () => {
+    document.getElementById('justificar-modal').classList.add('hidden');
+    currentAsistenciaId = null;
+  });
+
+  document.getElementById('justificar-confirmar')?.addEventListener('click', async () => {
+    if (!currentAsistenciaId) return;
+
+    const observacion = document.getElementById('justificar-observacion').value.trim();
+    if (!observacion) {
+      alert('Por favor ingresa una observación para justificar la ausencia.');
+      return;
+    }
+
+    const btn = document.getElementById('justificar-confirmar');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Guardando...';
+
+    try {
+      await apiFetch(`/api/asistencia/${currentAsistenciaId}/justificar`, {
+        method: 'PATCH',
+        body: JSON.stringify({ estado: 'JUSTIFICADO', observacion }),
+      });
+      document.getElementById('justificar-modal').classList.add('hidden');
+      loadAsistencia();
+    } catch (err) {
+      alert('Error al justificar: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  });
+
+  document.getElementById('justificar-modal')?.addEventListener('click', (e) => {
+    if (e.target === document.getElementById('justificar-modal')) {
+      document.getElementById('justificar-modal').classList.add('hidden');
+      currentAsistenciaId = null;
+    }
+  });
+
+  loadStudents();
+</script>

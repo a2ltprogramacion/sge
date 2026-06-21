@@ -1,0 +1,139 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+import { apiGet } from '@/lib/api';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
+
+const secciones = await apiGet('/api/docente/secciones');
+const planes = await apiGet('/api/docente/planes');
+const asistenciasHoy = await apiGet('/api/docente/asistencia/hoy');
+---
+
+<Layout title="Dashboard Docente" description="Panel de control del docente">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="DOCENTE" userName="{user.nombres} {user.apellidos}" />
+
+    <div class="max-w-6xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-main mb-2">Bienvenido, {user.nombres} {user.apellidos}</h1>
+        <p class="text-text-muted">Panel de control docente - U.E.N. Simón Bolívar</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="card">
+          <div class="card-body">
+            <p class="text-sm text-text-muted mb-1">Secciones Asignadas</p>
+            <p class="text-3xl font-bold text-text-main">{secciones?.length || 0}</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p class="text-sm text-text-muted mb-1">Planes Activos</p>
+            <p class="text-3xl font-bold text-text-main">{planes?.length || 0}</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p class="text-sm text-text-muted mb-1">Asistencias Hoy</p>
+            <p class="text-3xl font-bold text-text-main">{asistenciasHoy?.procesadas || 0}</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p class="text-sm text-text-muted mb-1">Alumnos a Cargo</p>
+            <p class="text-3xl font-bold text-text-main">{secciones?.reduce((acc, s) => acc + (s.total_estudiantes || 0), 0) || 0}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <a href="/docente/planes" class="card hover:shadow-lg transition-shadow cursor-pointer">
+          <div class="card-body text-center">
+            <svg class="w-12 h-12 mx-auto text-primary-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2z" />
+            </svg>
+            <h3 class="text-lg font-semibold text-text-main mb-1">Planes de Evaluación</h3>
+            <p class="text-text-muted text-sm">Crear y gestionar planes de evaluación</p>
+          </div>
+        </a>
+        <a href="/docente/asistencia" class="card hover:shadow-lg transition-shadow cursor-pointer">
+          <div class="card-body text-center">
+            <svg class="w-12 h-12 mx-auto text-success-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2z" />
+            </svg>
+            <h3 class="text-lg font-semibold text-text-main mb-1">Asistencia Diaria</h3>
+            <p class="text-text-muted text-sm">Registrar asistencia del día</p>
+          </div>
+        </a>
+        <a href="/docente/calificaciones" class="card hover:shadow-lg transition-shadow cursor-pointer">
+          <div class="card-body text-center">
+            <svg class="w-12 h-12 mx-auto text-warning-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414c.39.39.39 1.023 0 1.414l-4.586 4.586a1 1 0 01-1.414 0z" />
+            </svg>
+            <h3 class="text-lg font-semibold text-text-main mb-1">Calificaciones</h3>
+            <p class="text-text-muted text-sm">Cargar y revisar notas</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold text-text-main">Mis Secciones Asignadas</h2>
+        </div>
+        <div class="card-body">
+          {secciones && secciones.length > 0 ? (
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="text-left text-text-muted text-sm">
+                    <th class="pb-3 font-medium">Sección</th>
+                    <th class="pb-3 font-medium">Nivel</th>
+                    <th class="pb-3 font-medium">Estudiantes</th>
+                    <th class="pb-3 font-medium">Planes</th>
+                    <th class="pb-3 font-medium">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  {secciones.map((seccion) => (
+                    <tr class="hover:bg-bg-alt">
+                      <td class="py-4">
+                        <span class="font-medium text-text-main">{seccion.nivel}-{seccion.seccion}</span>
+                      </td>
+                      <td class="py-4 text-text-muted">{seccion.nivel}</td>
+                      <td class="py-4 text-text-main">{seccion.total_estudiantes || 0}</td>
+                      <td class="py-4 text-text-muted">{seccion.planes_count || 0}</td>
+                      <td class="py-4">
+                        <div class="flex gap-2">
+                          <a href={`/docente/asistencia?seccion=${seccion.id}`} class="btn btn-sm btn-outline">Asistencia</a>
+                          <a href={`/docente/calificaciones?seccion=${seccion.id}`} class="btn btn-sm btn-outline">Notas</a>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div class="text-center py-8 text-text-muted">
+              <svg class="w-12 h-12 mx-auto text-muted/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 002-2h-2M9 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 002-2h-2z" />
+              </svg>
+              <p class="text-text-muted">No tienes secciones asignadas actualmente</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>

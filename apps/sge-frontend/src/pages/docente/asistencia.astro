@@ -1,0 +1,268 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+import { apiGet, apiFetch } from '@/lib/api';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
+
+const secciones = await apiGet('/api/docente/secciones');
+---
+
+<Layout title="Asistencia Diaria" description="Registro de asistencia diaria">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="DOCENTE" userName="{user.nombres} {user.apellidos}" />
+
+    <div class="max-w-6xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-main mb-2">Asistencia Diaria</h1>
+        <p class="text-text-muted">Registra la asistencia de tus estudiantes de forma rápida y eficiente</p>
+      </div>
+
+      <!-- Section Selector -->
+      <div class="card mb-8">
+        <div class="card-body">
+          <label class="label">Seleccionar Sección</label>
+          <select id="seccion-select" class="input" required>
+            <option value="">Selecciona una sección</option>
+            {secciones.map((seccion) => (
+              <option value={seccion.id}>{seccion.nivel}-{seccion.seccion} ({seccion.total_estudiantes || 0} estudiantes)</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <!-- Date Selector -->
+      <div class="card mb-8">
+        <div class="card-body">
+          <label class="label">Fecha de Asistencia</label>
+          <input type="date" id="fecha-asistencia" class="input" value="{new Date().toISOString().split('T')[0]}" max="{new Date().toISOString().split('T')[0]}" required>
+        </div>
+      </div>
+
+      <!-- Students List -->
+      <div id="students-container" class="hidden">
+        <div class="card">
+          <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 class="text-xl font-semibold text-text-main">Lista de Estudiantes - <span id="seccion-nombre"></span></h2>
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-2 text-sm text-text-muted">
+                <input type="checkbox" id="select-all" class="w-4 h-4 text-primary-600 rounded">
+                <label for="select-all" class="text-text-muted">Seleccionar todos</label>
+              </div>
+              <div class="flex gap-2">
+                <button id="mark-all-present" class="btn btn-sm btn-success" disabled>Marcar Todos Presentes</button>
+                <button id="mark-all-absent" class="btn btn-sm btn-danger" disabled>Marcar Todos Ausentes</button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="overflow-x-auto">
+              <table class="w-full" id="students-table">
+                <thead>
+                  <tr class="text-left text-text-muted text-sm">
+                    <th class="pb-3 font-medium w-12 text-center">
+                      <input type="checkbox" id="select-all-header" class="w-4 h-4 text-primary-600 rounded">
+                    </th>
+                    <th class="pb-3 font-medium">Estudiante</th>
+                    <th class="pb-3 font-medium">Cédula Escolar</th>
+                    <th class="pb-3 font-medium text-center">Estado</th>
+                    <th class="pb-3 font-medium">Observación</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border" id="students-tbody">
+                  <body>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-4 mt-6">
+          <button id="cancel-btn" class="btn btn-secondary">Cancelar</button>
+          <button id="save-btn" class="btn btn-primary" disabled>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4" />
+            </svg>
+            Guardar Asistencia
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { apiGet, apiPost } from '@/lib/api';
+
+  const seccionSelect = document.getElementById('seccion-select');
+  const fechaInput = document.getElementById('fecha-asistencia');
+  const studentsContainer = document.getElementById('students-container');
+  const seccionNombre = document.getElementById('seccion-nombre');
+  const saveBtn = document.getElementById('save-btn');
+  const cancelBtn = document.getElementById('cancel-btn');
+  const selectAll = document.getElementById('select-all');
+  const selectAllHeader = document.getElementById('select-all-header');
+  const markAllPresentBtn = document.getElementById('mark-all-present');
+  const markAllAbsentBtn = document.getElementById('mark-all-absent');
+  const studentsTbody = document.getElementById('students-tbody');
+
+  let estudiantes = [];
+
+  // Load students when section changes
+  seccionSelect.addEventListener('change', async () => {
+    const seccionId = seccionSelect.value;
+    const fecha = fechaInput.value;
+
+    if (!seccionId || !fecha) {
+      studentsContainer.classList.add('hidden');
+      return;
+    }
+
+    try {
+      const data = await apiGet(`/api/docente/secciones/${seccionId}/estudiantes?fecha=${fechaInput.value}`);
+      estudiantes = (data as any).estudiantes || [];
+
+      // Find section name
+      const seccion = document.querySelector(`#seccion-select option[value="${seccionId}"]`);
+      seccionNombre.textContent = seccion ? seccion.textContent : '';
+
+      // Render students
+      renderStudents();
+
+      studentsContainer.classList.remove('hidden');
+      markAllPresentBtn.disabled = false;
+      markAllAbsentBtn.disabled = false;
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al cargar estudiantes: ' + error.message);
+    }
+  });
+
+  function renderStudents() {
+    studentsTbody.innerHTML = estudiantes.map((est, index) => `
+      <tr class="hover:bg-bg-alt" data-index="${index}">
+        <td class="py-4 text-center">
+          <input type="checkbox" class="student-checkbox w-4 h-4 text-primary-600 rounded" data-index="${index}" checked>
+        </td>
+        <td class="py-4">
+          <div class="font-medium text-text-main">${est.nombres} ${est.apellidos}</div>
+          <div class="text-sm text-text-muted">${est.cedula_escolar || ''}</div>
+        </td>
+        <td class="py-4 text-text-muted">${est.cedula_escolar || ''}</td>
+        <td class="py-4 text-center">
+          <select class="estado-select input w-28 mx-auto text-center" data-index="${index}" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+            <option value="PRESENTE" selected>Presente</option>
+            <option value="AUSENTE">Ausente</option>
+            <option value="JUSTIFICADO">Justificado</option>
+          </select>
+        </td>
+        <td class="py-4">
+          <input type="text" class="observacion-input input w-full text-sm" data-index="${index}" placeholder="Observación" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+        </td>
+      </tr>
+    `).join('');
+
+    // Add event listeners to checkboxes
+    document.querySelectorAll('.student-checkbox').forEach(cb => {
+      cb.addEventListener('change', updateActionButtons);
+    });
+  }
+
+  function updateActionButtons() {
+    const checked = document.querySelectorAll('.student-checkbox:checked').length;
+    saveBtn.disabled = checked === 0;
+    markAllPresentBtn.disabled = document.querySelectorAll('.student-checkbox').length === 0;
+    markAllAbsentBtn.disabled = document.querySelectorAll('.student-checkbox').length === 0;
+  }
+
+  // Select all
+  selectAllHeader.addEventListener('change', (e) => {
+    document.querySelectorAll('.student-checkbox').forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+    updateActionButtons();
+  });
+
+  selectAll.addEventListener('change', (e) => {
+    document.querySelectorAll('.student-checkbox').forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+    updateActionButtons();
+  });
+
+  // Mark all present
+  markAllPresentBtn.addEventListener('click', () => {
+    document.querySelectorAll('.estado-select').forEach(select => {
+      select.value = 'PRESENTE';
+    });
+  });
+
+  // Mark all absent
+  markAllAbsentBtn.addEventListener('click', () => {
+    document.querySelectorAll('.estado-select').forEach(select => {
+      select.value = 'AUSENTE';
+    });
+  });
+
+  // Save attendance
+  document.getElementById('save-btn')?.addEventListener('click', async () => {
+    const seccionId = seccionSelect.value;
+    const fecha = fechaInput.value;
+
+    if (!seccionId || !fecha) return;
+
+    const asistencias = [];
+    document.querySelectorAll('#students-tbody tr').forEach((row, index) => {
+      const estadoSelect = row.querySelector('.estado-select');
+      const observacionInput = row.querySelector('.observacion-input');
+      const checkbox = row.querySelector('.student-checkbox');
+
+      if (checkbox && checkbox.checked) {
+        asistencias.push({
+          matricula_id: estudiantes[index].id,
+          estado: estadoSelect.value,
+          observacion: observacionInput.value
+        });
+      }
+    });
+
+    if (asistencias.length === 0) {
+      alert('Selecciona al menos un estudiante');
+      return;
+    }
+
+    try {
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /> Guardando...';
+
+      await apiPost('/api/asistencia/batch', {
+        seccion_id: seccionId,
+        fecha: fecha,
+        asistencias: asistencias
+      });
+
+      alert('Asistencia guardada correctamente');
+      seccionSelect.value = '';
+      document.getElementById('students-container').classList.add('hidden');
+      fechaInput.value = new Date().toISOString().split('T')[0];
+
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al guardar asistencia: ' + error.message);
+    } finally {
+      document.getElementById('save-btn').disabled = false;
+      document.getElementById('save-btn').innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4" /> Guardar Asistencia';
+    }
+  });
+</script>

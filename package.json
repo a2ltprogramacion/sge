@@ -11,11 +11,12 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,html,astro}\"",
-    "db:generate": "turbo run db:generate",
-    "db:migrate": "turbo run db:migrate",
-    "db:migrate:remote": "turbo run db:migrate:remote",
-    "db:seed": "turbo run db:seed",
-    "db:seed:remote": "turbo run db:seed:remote"
+    "db:create-migration": "cd apps/sge-api && wrangler d1 migrations create sge-db-prod",
+    "db:migrate": "cd apps/sge-api && wrangler d1 migrations apply sge-db-prod --local",
+    "db:migrate:remote": "cd apps/sge-api && wrangler d1 migrations apply sge-db-prod --remote",
+    "db:seed": "cd apps/sge-api && wrangler d1 execute sge-db-prod --local --file=../../packages/database/seeds/seed-all.sql",
+    "db:seed:remote": "cd apps/sge-api && wrangler d1 execute sge-db-prod --remote --file=../../packages/database/seeds/seed-all.sql",
+    "db:status": "cd apps/sge-api && wrangler d1 execute sge-db-prod --local --command \"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name; SELECT 'Usuarios cargados' AS CheckOK, count(*) FROM usuarios;\""
   },
   "devDependencies": {
     "turbo": "^2.0.0",

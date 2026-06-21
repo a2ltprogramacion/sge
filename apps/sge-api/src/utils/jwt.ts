@@ -1,41 +1,36 @@
-// JWT utilities using jose library
+import { sign, verify } from "hono/jwt";
+import type { UserRole } from "../middleware/rbac";
 
-import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
-
-const JWT_SECRET = new TextEncoder().encode(
-  // In production, this comes from env.JWT_SECRET
-  'dev-secret-change-in-production-min-64-chars-hex-dev-secret-change-in-production'
-);
-const JWT_ISSUER = 'sge-api';
-const JWT_AUDIENCE = 'sge-frontend';
-const JWT_EXPIRY = '8h';
-
-export interface SGEJWTPayload extends JWTPayload {
-  sub: string;
-  email: string;
-  rol: 'ADMINISTRADOR' | 'DOCENTE' | 'REPRESENTANTE';
-  nombres: string;
-  apellidos: string;
+export interface JWTPayload {
+  sub: string;       // ID de usuario (UUID)
+  email: string;     // Correo electrónico
+  rol: UserRole;     // Rol asignado
+  nombres: string;   // Nombres públicos
+  apellidos: string; // Apellidos públicos
+  exp: number;       // Timestamp de expiración (Unix)
 }
 
-export async function signJWT(payload: Omit<SGEJWTPayload, keyof JWTPayload>): Promise<string> {
-  return new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setIssuer(JWT_ISSUER)
-    .setAudience(JWT_AUDIENCE)
-    .setExpirationTime(JWT_EXPIRY)
-    .sign(JWT_SECRET);
+/**
+ * Genera un token JWT firmado con HS256.
+ * @param payload Datos del usuario que se inyectarán en los claims.
+ * @param secret Clave secreta de firma (procedente del entorno).
+ * @returns Promesa que resuelve al token firmado.
+ */
+export async function generateToken(payload: Omit<JWTPayload, "exp">, secret: string): Promise<string> {
+  const expirationTime = Math.floor(Date.now() / 1000) + (8 * 60 * 60); // Expiración en 8 horas exactas
+  const fullPayload: JWTPayload = {
+    ...payload,
+    exp: expirationTime
+  };
+  return sign(fullPayload, secret);
 }
 
-export async function verifyJWT(token: string): Promise<SGEJWTPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET, {
-      issuer: JWT_ISSUER,
-      audience: JWT_AUDIENCE,
-    });
-    return payload as SGEJWTPayload;
-  } catch {
-    return null;
-  }
+/**
+ * Verifica y decodifica un token JWT.
+ * @param token Token JWT recibido en la cabecera Bearer.
+ * @param secret Clave secreta de verificación.
+ * @returns El payload decodificado si es válido, o lanza un error.
+ */
+export async function verifyToken(token: string, secret: string): Promise<JWTPayload> {
+  return verify(token, secret) as unknown as Promise<JWTPayload>;
 }

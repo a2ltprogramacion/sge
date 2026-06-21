@@ -1,0 +1,335 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+import { apiGet, apiPost } from '@/lib/api';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
+
+const secciones = await apiGet('/api/docente/secciones');
+const planes = await apiGet('/api/docente/planes');
+---
+
+<Layout title="Calificaciones" description="Carga y revisión de calificaciones">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="DOCENTE" userName="{user.nombres} {user.apellidos}" />
+
+    <div class="max-w-6xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-main mb-2">Calificaciones</h1>
+        <p class="text-text-muted">Carga y revisa las calificaciones de tus estudiantes</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-8">
+        <div class="card-body">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="label">Sección</label>
+              <select id="seccion-select" class="input" required>
+                <option value="">Selecciona una sección</option>
+                {secciones.map((seccion) => (
+                  <option value={seccion.id}>{seccion.nivel}-{seccion.seccion}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label class="label">Plan de Evaluación</label>
+              <select id="plan-select" class="input" required disabled>
+                <option value="">Selecciona una sección primero</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Ítem de Evaluación</label>
+              <select id="evaluacion-select" class="input" required disabled>
+                <option value="">Selecciona un plan</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">&nbsp;</label>
+              <button id="load-grades-btn" class="btn btn-primary h-10" disabled>
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4l4 4m0 6H4" />
+                </svg>
+                Cargar Notas
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grades Matrix -->
+      <div id="grades-container" class="hidden">
+        <div class="card">
+          <div class="card-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 class="text-xl font-semibold text-text-main">Matriz de Calificaciones - <span id="evaluacion-nombre"></span></h2>
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 text-sm text-text-muted">
+                <input type="checkbox" id="select-all-grades" class="w-4 h-4 text-primary-600 rounded">
+                <label for="select-all-grades" class="text-text-muted">Seleccionar todos</label>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="overflow-x-auto">
+              <table class="w-full" id="grades-table">
+                <thead>
+                  <tr class="text-left text-text-muted text-sm sticky top-0 bg-bg-elevated">
+                    <th class="pb-3 font-medium w-12 text-center">
+                      <input type="checkbox" id="select-all-grades-header" class="w-4 h-4 text-primary-600 rounded">
+                    </th>
+                    <th class="pb-3 font-medium">Estudiante</th>
+                    <th class="pb-3 font-medium">Cédula Escolar</th>
+                    <th class="pb-3 font-medium text-center">Nota (0-20)</th>
+                    <th class="pb-3 font-medium">Observación</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border" id="grades-tbody">
+                  <!-- Rows will be inserted here by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-4 mt-6">
+          <button id="cancel-grades-btn" class="btn btn-secondary">Cancelar</button>
+          <button id="save-grades-btn" class="btn btn-primary" disabled>
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4" />
+            </svg>
+            Guardar Calificaciones
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { apiGet, apiPost } from '@/lib/api';
+
+  const seccionSelect = document.getElementById('seccion-select');
+  const planSelect = document.getElementById('plan-select');
+  const evaluacionSelect = document.getElementById('evaluacion-select');
+  const loadBtn = document.getElementById('load-grades-btn');
+  const gradesContainer = document.getElementById('grades-container');
+  const gradesTbody = document.getElementById('grades-tbody');
+  const evaluacionNombre = document.getElementById('evaluacion-nombre');
+  const saveBtn = document.getElementById('save-grades-btn');
+  const cancelBtn = document.getElementById('cancel-grades-btn');
+  const selectAllHeader = document.getElementById('select-all-grades-header');
+  const selectAll = document.getElementById('select-all-grades');
+
+  let estudiantes = [];
+  let currentEvaluacionId = null;
+
+  // Load plans when section changes
+  seccionSelect.addEventListener('change', async () => {
+    const seccionId = seccionSelect.value;
+    planSelect.disabled = true;
+    planSelect.innerHTML = '<option value="">Selecciona una sección primero</option>';
+    evaluacionSelect.disabled = true;
+    evaluacionSelect.innerHTML = '<option value="">Selecciona un plan</option>';
+    loadBtn.disabled = true;
+    gradesContainer.classList.add('hidden');
+
+    if (!seccionId) return;
+
+    try {
+      const planes = await apiGet(`/api/docente/planes?seccion_id=${seccionId}`);
+      planSelect.disabled = false;
+      planSelect.innerHTML = '<option value="">Selecciona un plan</option>';
+      planes.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = `${p.asignatura_nombre} - Lapso ${p.lapso} (${p.fecha_aprobacion ? 'Aprobado' : 'Borrador'})`;
+        planSelect.appendChild(option);
+      });
+    } catch (error) {
+      console.error('Error loading planes:', error);
+      alert('Error al cargar planes: ' + error.message);
+    }
+  });
+
+  // Load evaluations when plan changes
+  planSelect.addEventListener('change', async () => {
+    const planId = planSelect.value;
+    evaluacionSelect.disabled = true;
+    evaluacionSelect.innerHTML = '<option value="">Selecciona un plan</option>';
+    loadBtn.disabled = true;
+    gradesContainer.classList.add('hidden');
+
+    if (!planId) return;
+
+    try {
+      const evaluaciones = await apiGet(`/api/docente/planes/${planId}/evaluaciones`);
+      evaluacionSelect.disabled = false;
+      evaluacionSelect.innerHTML = '<option value="">Selecciona una evaluación</option>';
+      evaluaciones.forEach(e => {
+        const option = document.createElement('option');
+        option.value = e.id;
+        option.textContent = `${e.descripcion} (${e.ponderacion_porcentaje}%)`;
+        evaluacionSelect.appendChild(option);
+      });
+    } catch (error) {
+      console.error('Error loading evaluaciones:', error);
+      alert('Error al cargar evaluaciones: ' + error.message);
+    }
+  });
+
+  // Load grades when evaluation selected
+  evaluacionSelect.addEventListener('change', () => {
+    const evaluacionId = evaluacionSelect.value;
+    if (!evaluacionId) {
+      loadBtn.disabled = true;
+      return;
+    }
+    currentEvaluacionId = evaluacionId;
+    loadBtn.disabled = false;
+  });
+
+  // Load grades
+  loadBtn.addEventListener('click', async () => {
+    const evaluacionId = evaluacionSelect.value;
+    if (!evaluacionId) return;
+
+    try {
+      const data = await apiGet(`/api/calificaciones/evaluacion/${evaluacionId}/estudiantes`);
+      estudiantes = data.estudiantes || [];
+      currentEvaluacionId = evaluacionId;
+
+      const evaluacion = document.getElementById('evaluacion-select').selectedOptions[0];
+      document.getElementById('evaluacion-nombre').textContent = evaluacion ? evaluacion.textContent : '';
+
+      renderGrades();
+      gradesContainer.classList.remove('hidden');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al cargar calificaciones: ' + error.message);
+    }
+  });
+
+  function renderGrades() {
+    gradesTbody.innerHTML = estudiantes.map((est, index) => `
+      <tr class="hover:bg-bg-alt" data-index="${index}">
+        <td class="py-4 text-center">
+          <input type="checkbox" class="grade-checkbox w-4 h-4 text-primary-600 rounded" data-index="${index}" checked>
+        </td>
+        <td class="py-4">
+          <div class="font-medium text-text-main">${est.nombres} ${est.apellidos}</div>
+        </td>
+        <td class="py-4 text-text-muted">${est.cedula_escolar || ''}</td>
+        <td class="py-4 text-center">
+          <input type="number" class="nota-input input w-20 mx-auto text-center" data-index="${index}" min="0" max="20" step="0.1" value="${est.valor_nota !== null && est.valor_nota !== undefined ? est.valor_nota : ''}" placeholder="0-20" style="padding: 0.25rem 0.5rem; font-size: 0.875rem; width: 80px;">
+        </td>
+        <td class="py-4">
+          <input type="text" class="obs-input input w-full text-sm" data-index="${index}" placeholder="Observación" value="${est.observacion || ''}" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+        </td>
+      </tr>
+    `).join('');
+
+    // Add event listeners
+    document.querySelectorAll('.nota-input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const value = parseFloat(e.target.value);
+        if (isNaN(value) || value < 0 || value > 20) {
+          e.target.classList.add('border-red-500');
+          setTimeout(() => e.target.classList.remove('border-red-500'), 1500);
+        }
+      });
+    });
+
+    document.querySelectorAll('.grade-checkbox').forEach(cb => {
+      cb.addEventListener('change', updateActionButtons);
+    });
+  }
+
+  function updateActionButtons() {
+    const checked = document.querySelectorAll('.grade-checkbox:checked').length;
+    document.getElementById('save-grades-btn').disabled = checked === 0;
+  }
+
+  // Select all
+  document.getElementById('select-all-grades-header').addEventListener('change', (e) => {
+    document.querySelectorAll('.grade-checkbox').forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+    updateActionButtons();
+  });
+
+  document.getElementById('select-all-grades').addEventListener('change', (e) => {
+    document.querySelectorAll('.grade-checkbox').forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+    updateActionButtons();
+  });
+
+  // Save grades
+  document.getElementById('save-grades-btn')?.addEventListener('click', async () => {
+    const evaluacionId = document.getElementById('evaluacion-select').value;
+    if (!evaluacionId) return;
+
+    const calificaciones = [];
+    document.querySelectorAll('#grades-tbody tr').forEach((row, index) => {
+      const checkbox = row.querySelector('.grade-checkbox');
+      const notaInput = row.querySelector('.nota-input');
+      const obsInput = row.querySelector('.obs-input');
+
+      if (checkbox && checkbox.checked) {
+        const valor = parseFloat(notaInput.value);
+        if (isNaN(valor) || valor < 0 || valor > 20) {
+          alert('Las notas deben estar entre 0 y 20');
+          return;
+        }
+        calificaciones.push({
+          matricula_id: estudiantes[index].id,
+          valor_nota: parseFloat(notaInput.value),
+          observacion: obsInput.value
+        });
+      }
+    });
+
+    if (calificaciones.length === 0) {
+      alert('Selecciona al menos un estudiante');
+      return;
+    }
+
+    try {
+      document.getElementById('save-grades-btn').disabled = true;
+      document.getElementById('save-grades-btn').innerHTML = '<svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /> Guardando...';
+
+      await apiPost('/api/calificaciones/batch', {
+        evaluacion_item_id: currentEvaluacionId,
+        notas: calificaciones
+      });
+
+      alert('Calificaciones guardadas correctamente');
+
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al guardar calificaciones: ' + error.message);
+    } finally {
+      document.getElementById('save-grades-btn').disabled = false;
+      document.getElementById('save-grades-btn').innerHTML = '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4" /> Guardar Calificaciones';
+    }
+  });
+
+  // Cancel buttons
+  document.getElementById('cancel-btn')?.addEventListener('click', () => {
+    window.location.reload();
+  });
+
+  document.getElementById('cancel-grades-btn')?.addEventListener('click', () => {
+    window.location.reload();
+  });
+</script>

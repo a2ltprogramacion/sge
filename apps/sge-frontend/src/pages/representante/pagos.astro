@@ -1,0 +1,433 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
+---
+
+<Layout title="Pagos y Reportes" description="Registrar pagos y consultar historial de pagos">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="REPRESENTANTE" userName={`${user.nombres} ${user.apellidos}`} />
+
+    <div class="max-w-5xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-main mb-2">Pagos y Reportes</h1>
+        <p class="text-text-muted">Registrar pagos y consultar historial de pagos</p>
+      </div>
+
+      <div class="card mb-8" id="student-selector-card">
+        <div class="card-body">
+          <label class="label" for="matricula-select">Estudiante</label>
+          <select id="matricula-select" class="input">
+            <option value="">Cargando estudiantes...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card mb-8" id="payment-form-card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold text-text-main">Registrar Pago</h2>
+        </div>
+        <div class="card-body">
+          <form id="payment-form" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="label" for="mes-correspondiente">Mes Correspondiente</label>
+                <select id="mes-correspondiente" class="input" required>
+                  <option value="">Seleccionar mes</option>
+                  <option value="INSCRIPCION">Inscripción</option>
+                  <option value="SEPTIEMBRE">Septiembre</option>
+                  <option value="OCTUBRE">Octubre</option>
+                  <option value="NOVIEMBRE">Noviembre</option>
+                  <option value="DICIEMBRE">Diciembre</option>
+                  <option value="ENERO">Enero</option>
+                  <option value="FEBRERO">Febrero</option>
+                  <option value="MARZO">Marzo</option>
+                  <option value="ABRIL">Abril</option>
+                  <option value="MAYO">Mayo</option>
+                  <option value="JUNIO">Junio</option>
+                  <option value="JULIO">Julio</option>
+                  <option value="AGOSTO">Agosto</option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="monto-bs">Monto en Bolívares (Bs)</label>
+                <input type="number" id="monto-bs" class="input" step="0.01" min="0" required placeholder="0,00" />
+              </div>
+              <div>
+                <label class="label" for="tasa-cambio">Tasa de Cambio (Bs/USD)</label>
+                <input type="number" id="tasa-cambio" class="input" step="0.01" min="0" required placeholder="0,00" />
+              </div>
+              <div>
+                <label class="label" for="monto-usd">Monto en Dólares (USD)</label>
+                <input type="number" id="monto-usd" class="input bg-bg-alt" step="0.01" min="0" readonly />
+              </div>
+              <div>
+                <label class="label" for="referencia">Referencia Bancaria</label>
+                <input type="text" id="referencia" class="input" required placeholder="Número de referencia" />
+              </div>
+              <div>
+                <label class="label" for="banco-origen">Banco Origen</label>
+                <select id="banco-origen" class="input" required>
+                  <option value="">Seleccionar banco</option>
+                  <option value="Banesco">Banesco</option>
+                  <option value="Mercantil">Mercantil</option>
+                  <option value="Provincial">Provincial</option>
+                  <option value="Venezuela">Banco de Venezuela</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="banco-destino">Banco Destino</label>
+                <input type="text" id="banco-destino" class="input" value="Banesco" required />
+              </div>
+              <div>
+                <label class="label" for="fecha-pago">Fecha de Pago</label>
+                <input type="date" id="fecha-pago" class="input" required />
+              </div>
+            </div>
+
+            <div>
+              <label class="label" for="comprobante">Comprobante de Pago</label>
+              <div class="flex items-center gap-4">
+                <input type="file" id="comprobante" class="input file-input" accept="image/*" />
+              </div>
+              <div id="preview-container" class="hidden mt-2">
+                <img id="preview-image" class="max-w-xs rounded-lg border border-border" alt="Vista previa del comprobante" />
+                <p id="compression-info" class="text-xs text-text-muted mt-1"></p>
+              </div>
+            </div>
+
+            <div id="form-error" class="hidden p-3 bg-error-50 text-error-600 rounded-lg text-sm"></div>
+            <div id="form-success" class="hidden p-3 bg-success-50 text-success-600 rounded-lg text-sm"></div>
+
+            <div class="flex gap-4">
+              <button type="submit" id="submit-btn" class="btn btn-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Registrar Pago
+              </button>
+              <button type="reset" class="btn btn-secondary">Limpiar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card mb-8" id="history-card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold text-text-main">Historial de Pagos</h2>
+        </div>
+        <div class="card-body">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="text-left text-text-muted text-sm">
+                  <th class="pb-3 font-medium">Mes</th>
+                  <th class="pb-3 font-medium text-center">Monto Bs</th>
+                  <th class="pb-3 font-medium text-center">Tasa</th>
+                  <th class="pb-3 font-medium text-center">Monto USD</th>
+                  <th class="pb-3 font-medium">Referencia</th>
+                  <th class="pb-3 font-medium">Banco Origen</th>
+                  <th class="pb-3 font-medium">Fecha</th>
+                  <th class="pb-3 font-medium text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border" id="history-tbody">
+              </tbody>
+            </table>
+          </div>
+          <div id="history-empty" class="hidden text-center py-6 text-text-muted">
+            No hay pagos registrados para este estudiante.
+          </div>
+          <div id="history-loading" class="text-center py-6 text-text-muted">
+            <p>Cargando historial de pagos...</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="loading-state" class="hidden text-center py-8 text-text-muted">
+        <p>Cargando...</p>
+      </div>
+      <div id="error-state" class="hidden text-center py-8 text-error-600">
+        <p id="error-message">Error al cargar datos.</p>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { apiGet, apiPost } from '@/lib/api';
+
+  const matriculaSelect = document.getElementById('matricula-select');
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorMessage = document.getElementById('error-message');
+  const paymentForm = document.getElementById('payment-form');
+  const formError = document.getElementById('form-error');
+  const formSuccess = document.getElementById('form-success');
+  const submitBtn = document.getElementById('submit-btn');
+  const montoBs = document.getElementById('monto-bs');
+  const tasaCambio = document.getElementById('tasa-cambio');
+  const montoUsd = document.getElementById('monto-usd');
+  const comprobante = document.getElementById('comprobante');
+  const previewContainer = document.getElementById('preview-container');
+  const previewImage = document.getElementById('preview-image');
+  const compressionInfo = document.getElementById('compression-info');
+  const historyTbody = document.getElementById('history-tbody');
+  const historyEmpty = document.getElementById('history-empty');
+  const historyLoading = document.getElementById('history-loading');
+
+  let imagenB64 = '';
+  let selectedMatriculaId = '';
+
+  function showError(msg) {
+    loadingState.classList.add('hidden');
+    errorState.classList.remove('hidden');
+    errorMessage.textContent = msg;
+  }
+
+  function showFormError(msg) {
+    formSuccess.classList.add('hidden');
+    formError.classList.remove('hidden');
+    formError.textContent = msg;
+  }
+
+  function showFormSuccess(msg) {
+    formError.classList.add('hidden');
+    formSuccess.classList.remove('hidden');
+    formSuccess.textContent = msg;
+  }
+
+  function hideFormMessages() {
+    formError.classList.add('hidden');
+    formSuccess.classList.add('hidden');
+  }
+
+  function setDefaultDate() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha-pago').value = today;
+  }
+
+  function setDefaultMonth() {
+    document.getElementById('mes-correspondiente').value = '';
+  }
+
+  function calcUsd() {
+    const bs = parseFloat(montoBs.value) || 0;
+    const tasa = parseFloat(tasaCambio.value) || 1;
+    montoUsd.value = (bs / tasa).toFixed(2);
+  }
+
+  montoBs.addEventListener('input', calcUsd);
+  tasaCambio.addEventListener('input', calcUsd);
+
+  async function compressImage(file) {
+    const maxSizeKB = 100;
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > 1200) {
+          const ratio = 1200 / width;
+          width = 1200;
+          height = Math.round(height * ratio);
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        let quality = 0.8;
+        function tryCompress() {
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error('Error al comprimir imagen'));
+              return;
+            }
+            if (blob.size > maxSizeKB * 1024 && quality > 0.1) {
+              quality -= 0.1;
+              tryCompress();
+            } else {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const kb = (blob.size / 1024).toFixed(1);
+                compressionInfo.textContent = `Comprimido: ${kb} KB (${width}x${height})`;
+                const b64 = reader.result.split(',')[1] || reader.result;
+                resolve(b64);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            }
+          }, 'image/webp', quality);
+        }
+        tryCompress();
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  comprobante.addEventListener('change', async () => {
+    const file = comprobante.files[0];
+    if (!file) {
+      previewContainer.classList.add('hidden');
+      imagenB64 = '';
+      return;
+    }
+    try {
+      previewContainer.classList.remove('hidden');
+      previewImage.src = URL.createObjectURL(file);
+      compressionInfo.textContent = 'Comprimiendo imagen...';
+      imagenB64 = await compressImage(file);
+    } catch (err) {
+      showFormError('Error al procesar imagen: ' + err.message);
+      comprobante.value = '';
+      imagenB64 = '';
+      previewContainer.classList.add('hidden');
+    }
+  });
+
+  async function loadStudents() {
+    try {
+      const data = await apiGet('/api/representante/mis-estudiantes');
+      const estudiantes = data.estudiantes || data;
+      if (!estudiantes.length) {
+        showError('No tienes estudiantes asociados. Contacta a la administración.');
+        return;
+      }
+      matriculaSelect.innerHTML = estudiantes.map(e =>
+        `<option value="${e.matricula_id}">${e.nombres} ${e.apellidos} - ${e.nivel}-${e.seccion}</option>`
+      ).join('');
+      matriculaSelect.addEventListener('change', onStudentChange);
+      selectedMatriculaId = matriculaSelect.value;
+      loadHistory();
+    } catch (err) {
+      showError('Error al cargar estudiantes: ' + err.message);
+    }
+  }
+
+  function onStudentChange() {
+    selectedMatriculaId = matriculaSelect.value;
+    if (selectedMatriculaId) {
+      loadHistory();
+    }
+  }
+
+  async function loadHistory() {
+    if (!selectedMatriculaId) return;
+    historyLoading.classList.remove('hidden');
+    historyEmpty.classList.add('hidden');
+    historyTbody.innerHTML = '';
+    try {
+      const data = await apiGet(`/api/pagos/resumen/representante?matricula_id=${selectedMatriculaId}`);
+      const pagos = data.pagos || data;
+      if (!pagos.length) {
+        historyLoading.classList.add('hidden');
+        historyEmpty.classList.remove('hidden');
+        return;
+      }
+      historyTbody.innerHTML = pagos.map(p => `
+        <tr class="hover:bg-bg-alt">
+          <td class="py-3 text-text-main">${p.mes_correspondiente}</td>
+          <td class="py-3 text-center text-text-main">${parseFloat(p.monto_bs).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</td>
+          <td class="py-3 text-center text-text-main">${parseFloat(p.tasa_cambio).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</td>
+          <td class="py-3 text-center text-text-main">${parseFloat(p.monto_usd).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</td>
+          <td class="py-3 text-text-main font-mono">${p.referencia_bancaria}</td>
+          <td class="py-3 text-text-main">${p.banco_origen}</td>
+          <td class="py-3 text-text-main">${p.fecha_pago}</td>
+          <td class="py-3 text-center">
+            ${p.estado === 'APROBADO' ? '<span class="badge badge-success">Aprobado</span>' :
+              p.estado === 'RECHAZADO' ? '<span class="badge badge-error">Rechazado</span>' :
+              '<span class="badge badge-warning">Pendiente</span>'}
+          </td>
+        </tr>
+      `).join('');
+      historyLoading.classList.add('hidden');
+    } catch (err) {
+      historyLoading.classList.add('hidden');
+      historyTbody.innerHTML = `<tr><td colspan="8" class="py-3 text-center text-error-600">Error al cargar historial: ${err.message}</td></tr>`;
+    }
+  }
+
+  paymentForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideFormMessages();
+
+    if (!selectedMatriculaId) {
+      showFormError('Selecciona un estudiante.');
+      return;
+    }
+
+    const mesCorrespondiente = document.getElementById('mes-correspondiente').value;
+    const montoBsVal = parseFloat(montoBs.value);
+    const tasaCambioVal = parseFloat(tasaCambio.value);
+    const montoUsdVal = parseFloat(montoUsd.value) || (montoBsVal / tasaCambioVal);
+    const referencia = document.getElementById('referencia').value.trim();
+    const bancoOrigen = document.getElementById('banco-origen').value;
+    const bancoDestino = document.getElementById('banco-destino').value.trim();
+    const fechaPago = document.getElementById('fecha-pago').value;
+
+    if (!mesCorrespondiente || !montoBsVal || !tasaCambioVal || !referencia || !bancoOrigen || !fechaPago) {
+      showFormError('Completa todos los campos requeridos.');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /> Registrando...';
+
+    try {
+      await apiPost('/api/pagos/registrar', {
+        matricula_id: selectedMatriculaId,
+        mes_correspondiente: mesCorrespondiente,
+        monto_bolivares: montoBsVal,
+        monto_dolares: montoUsdVal,
+        tasa_cambio: tasaCambioVal,
+        referencia_bancaria: referencia,
+        banco_origen: bancoOrigen,
+        banco_destino: bancoDestino,
+        fecha_pago: fechaPago,
+        imagen_b64: imagenB64,
+      });
+      showFormSuccess('Pago registrado exitosamente.');
+      paymentForm.reset();
+      imagenB64 = '';
+      previewContainer.classList.add('hidden');
+      setDefaultDate();
+      setDefaultMonth();
+      calcUsd();
+      loadHistory();
+    } catch (err) {
+      showFormError('Error al registrar pago: ' + err.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg> Registrar Pago';
+    }
+  });
+
+  paymentForm.addEventListener('reset', () => {
+    hideFormMessages();
+    imagenB64 = '';
+    previewContainer.classList.add('hidden');
+    setDefaultDate();
+    setDefaultMonth();
+    calcUsd();
+  });
+
+  setDefaultDate();
+  setDefaultMonth();
+  calcUsd();
+  loadStudents();
+</script>

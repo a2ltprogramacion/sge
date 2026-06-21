@@ -1,0 +1,264 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
+---
+
+<Layout title="Gestión de Usuarios" description="Administración de usuarios del sistema">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="ADMINISTRADOR" userName={`${user.nombres} ${user.apellidos}`} />
+
+    <div class="max-w-6xl mx-auto">
+      <div class="mb-8 flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-text-main mb-2">Gestión de Usuarios</h1>
+          <p class="text-text-muted">Administrar docentes, representantes y estudiantes del sistema</p>
+        </div>
+        <button id="btn-nuevo-usuario" class="btn btn-primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Nuevo Usuario
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-header border-b border-border">
+          <div class="flex gap-2" id="tabs-container" role="tablist">
+            <button class="tab tab-active" data-rol="" role="tab">Todos</button>
+            <button class="tab" data-rol="DOCENTE" role="tab">Docentes</button>
+            <button class="tab" data-rol="REPRESENTANTE" role="tab">Representantes</button>
+            <button class="tab" data-rol="ESTUDIANTE" role="tab">Estudiantes</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="text-left text-text-muted text-sm">
+                  <th class="pb-3 font-medium">Nombre</th>
+                  <th class="pb-3 font-medium">Email / Rol</th>
+                  <th class="pb-3 font-medium">Cédula</th>
+                  <th class="pb-3 font-medium">Estado</th>
+                  <th class="pb-3 font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border" id="usuarios-tbody">
+              </tbody>
+            </table>
+          </div>
+          <div id="loading-state" class="text-center py-8 text-text-muted">
+            <p>Cargando usuarios...</p>
+          </div>
+          <div id="empty-state" class="hidden text-center py-8 text-text-muted">
+            <svg class="w-12 h-12 mx-auto text-muted/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <p>No se encontraron usuarios</p>
+          </div>
+          <div id="error-state" class="hidden text-center py-8 text-error-600">
+            <p id="error-message">Error al cargar usuarios.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<div id="modal-backdrop" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="card w-full max-w-lg mx-auto">
+    <div class="card-header flex items-center justify-between">
+      <h2 class="text-xl font-semibold text-text-main" id="modal-title">Nuevo Usuario</h2>
+      <button id="btn-cerrar-modal" class="text-text-muted hover:text-text-main">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <form id="form-nuevo-usuario" class="card-body space-y-4">
+      <div>
+        <label class="label" for="input-nombre">Nombre Completo</label>
+        <input id="input-nombre" type="text" class="input" required />
+      </div>
+      <div>
+        <label class="label" for="input-email">Correo Electrónico</label>
+        <input id="input-email" type="email" class="input" required />
+      </div>
+      <div>
+        <label class="label" for="input-password">Contraseña</label>
+        <input id="input-password" type="password" class="input" required minlength="6" />
+      </div>
+      <div>
+        <label class="label" for="input-rol">Rol</label>
+        <select id="input-rol" class="input" required>
+          <option value="">Seleccionar rol...</option>
+          <option value="DOCENTE">Docente</option>
+          <option value="REPRESENTANTE">Representante</option>
+          <option value="ESTUDIANTE">Estudiante</option>
+        </select>
+      </div>
+      <div id="modal-error" class="hidden text-sm text-error-600"></div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" id="btn-cancelar-modal" class="btn btn-secondary">Cancelar</button>
+        <button type="submit" id="btn-guardar" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  import { apiGet, apiPost, apiFetch } from '@/lib/api';
+
+  const tbody = document.getElementById('usuarios-tbody');
+  const loadingState = document.getElementById('loading-state');
+  const emptyState = document.getElementById('empty-state');
+  const errorState = document.getElementById('error-state');
+  const errorMessage = document.getElementById('error-message');
+
+  const modalBackdrop = document.getElementById('modal-backdrop');
+  const formNuevoUsuario = document.getElementById('form-nuevo-usuario');
+  const modalError = document.getElementById('modal-error');
+
+  let currentRol = '';
+
+  function showError(msg) {
+    loadingState.classList.add('hidden');
+    emptyState.classList.add('hidden');
+    errorState.classList.remove('hidden');
+    errorMessage.textContent = msg;
+  }
+
+  function renderUsuarios(usuarios) {
+    if (!usuarios.length) {
+      tbody.innerHTML = '';
+      loadingState.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      errorState.classList.add('hidden');
+      return;
+    }
+
+    tbody.innerHTML = usuarios.map(u => `
+      <tr class="hover:bg-bg-alt">
+        <td class="py-3 font-medium text-text-main">${u.nombres} ${u.apellidos || ''}</td>
+        <td class="py-3">
+          <span class="block text-text-main">${u.email}</span>
+          <span class="text-xs text-text-muted">${u.rol}</span>
+        </td>
+        <td class="py-3 text-text-main">${u.cedula || '—'}</td>
+        <td class="py-3">
+          ${u.activo !== false
+            ? '<span class="badge badge-success">Activo</span>'
+            : '<span class="badge badge-error">Inactivo</span>'}
+        </td>
+        <td class="py-3">
+          <button class="btn btn-sm ${u.activo !== false ? 'btn-outline-error' : 'btn-outline-success'}" data-user-id="${u.id}" data-activo="${u.activo !== false}">
+            ${u.activo !== false ? 'Suspender' : 'Activar'}
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+    loadingState.classList.add('hidden');
+    emptyState.classList.add('hidden');
+    errorState.classList.add('hidden');
+
+    tbody.querySelectorAll('button[data-user-id]').forEach(btn => {
+      btn.addEventListener('click', () => toggleActivo(btn.dataset.userId, btn.dataset.activo === 'true'));
+    });
+  }
+
+  async function loadUsuarios() {
+    loadingState.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    errorState.classList.add('hidden');
+    tbody.innerHTML = '';
+
+    try {
+      const params = currentRol ? `?rol=${currentRol}` : '';
+      const data = await apiGet(`/api/admin/usuarios${params}`);
+      renderUsuarios(data.usuarios || data);
+    } catch (err) {
+      showError('Error al cargar usuarios: ' + err.message);
+    }
+  }
+
+  async function toggleActivo(userId, activo) {
+    try {
+      await apiFetch(`/api/admin/usuarios/${userId}/toggle-activo`, { method: 'PATCH' });
+      loadUsuarios();
+    } catch (err) {
+      alert('Error al cambiar estado: ' + err.message);
+    }
+  }
+
+  document.getElementById('tabs-container').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-rol]');
+    if (!btn) return;
+
+    document.querySelectorAll('#tabs-container .tab').forEach(t => t.classList.remove('tab-active'));
+    btn.classList.add('tab-active');
+    currentRol = btn.dataset.rol;
+    loadUsuarios();
+  });
+
+  document.getElementById('btn-nuevo-usuario').addEventListener('click', () => {
+    modalBackdrop.classList.remove('hidden');
+    formNuevoUsuario.reset();
+    modalError.classList.add('hidden');
+  });
+
+  function cerrarModal() {
+    modalBackdrop.classList.add('hidden');
+  }
+
+  document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModal);
+  document.getElementById('btn-cancelar-modal').addEventListener('click', cerrarModal);
+  modalBackdrop.addEventListener('click', (e) => {
+    if (e.target === modalBackdrop) cerrarModal();
+  });
+
+  formNuevoUsuario.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    modalError.classList.add('hidden');
+
+    const nombre = document.getElementById('input-nombre').value.trim();
+    const email = document.getElementById('input-email').value.trim();
+    const password = document.getElementById('input-password').value;
+    const rol = document.getElementById('input-rol').value;
+
+    if (!nombre || !email || !password || !rol) {
+      modalError.textContent = 'Todos los campos son obligatorios.';
+      modalError.classList.remove('hidden');
+      return;
+    }
+
+    const btnGuardar = document.getElementById('btn-guardar');
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = 'Guardando...';
+
+    try {
+      await apiPost('/api/admin/usuarios/crear', { nombre, email, password, rol });
+      cerrarModal();
+      loadUsuarios();
+    } catch (err) {
+      modalError.textContent = 'Error al crear usuario: ' + err.message;
+      modalError.classList.remove('hidden');
+    } finally {
+      btnGuardar.disabled = false;
+      btnGuardar.textContent = 'Guardar';
+    }
+  });
+
+  loadUsuarios();
+</script>

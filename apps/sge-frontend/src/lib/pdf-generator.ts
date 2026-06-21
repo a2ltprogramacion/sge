@@ -224,8 +224,8 @@ export function generateBoletaPDF(data: BoletaData): jsPDF {
   return doc;
 }
 
-export function downloadBoletaPDF(data: BoletaData, filename?: string): void {
+export function downloadBoletaPDF(data: BoletaData, fileName?: string): void {
   const doc = generateBoletaPDF(data);
-  const filename = filename || `boleta_${data.estudiante.cedula_escolar}_${new Date().toISOString().split('T')[0]}.pdf`;
-  doc.save(filename);
+  const targetName = fileName || `boleta_${data.estudiante.cedula_escolar}_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(targetName);
 }

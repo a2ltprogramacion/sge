@@ -8,6 +8,8 @@ import { asistenciaRouter } from "./routes/asistencia";
 import { pagosRouter } from "./routes/pagos";
 import { pushRouter } from "./routes/push";
 import { dashboardRouter } from "./routes/dashboard";
+import { adminRouter } from "./routes/admin";
+import { representanteRouter } from "./routes/representante";
 import { reportesRouter } from "./routes/reportes";
 import { authMiddleware } from "./middleware/auth";
 import { requireRoles } from "./middleware/rbac";
@@ -27,7 +29,9 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Middlewares globales de procesamiento
 app.use("*", logger());
 app.use("*", cors({
-  origin: "*", // Cambiar por dominios específicos en producción
+  origin: (c.env.ENVIRONMENT === "production")
+    ? "https://sge.pages.dev" // Dominio real del frontend en producción
+    : "*",
   allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowHeaders: ["Content-Type", "Authorization"],
   exposeHeaders: ["Content-Length"],
@@ -83,7 +87,13 @@ app.route("/api/push", pushRouter);
 // 7. Dashboard Analítico (Solo Admin)
 app.route("/api/dashboard", dashboardRouter);
 
-// 8. Reportes y Boletines
+// 8. Administración (Solo Admin)
+app.route("/api/admin", adminRouter);
+
+// 9. Representante (Estudiantes asociados)
+app.route("/api/representante", representanteRouter);
+
+// 10. Reportes y Boletines
 app.route("/api/reportes", reportesRouter);
 
 export default app;

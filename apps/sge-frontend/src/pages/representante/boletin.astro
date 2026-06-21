@@ -1,11 +1,23 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import Navigation from '@/components/navigation/Navigation.astro';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
 ---
 
 <Layout title="Boletín de Notas" description="Descargar boletín de notas del estudiante">
   <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
-    <Navigation userRole="REPRESENTANTE" userName="Carlos Pérez" />
+    <Navigation userRole="REPRESENTANTE" userName={`${user.nombres} ${user.apellidos}`} />
     
     <div class="max-w-4xl mx-auto">
       <div class="mb-8">
@@ -13,8 +25,18 @@ import Navigation from '@/components/navigation/Navigation.astro';
         <p class="text-text-muted">Descargar boletín oficial en formato PDF vectorial</p>
       </div>
 
+      <!-- Student Selector (for reps with multiple children) -->
+      <div class="card mb-8" id="student-selector-card">
+        <div class="card-body">
+          <label class="label" for="matricula-select">Estudiante</label>
+          <select id="matricula-select" class="input">
+            <option value="">Cargando estudiantes...</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Student Info Card -->
-      <div class="card mb-8">
+      <div class="card mb-8" id="student-info-card">
         <div class="card-header">
           <h2 class="text-xl font-semibold text-text-main">Datos del Estudiante</h2>
         </div>
@@ -22,38 +44,85 @@ import Navigation from '@/components/navigation/Navigation.astro';
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label class="label">Estudiante</label>
-              <p class="font-medium text-text-main">Pérez Rodríguez, Juan Diego</p>
+              <p class="font-medium text-text-main" id="estudiante-nombre">—</p>
             </div>
             <div>
               <label class="label">Cédula Escolar</label>
-              <p class="font-medium text-text-main">VE-20150912-01</p>
+              <p class="font-medium text-text-main" id="estudiante-cedula">—</p>
             </div>
             <div>
               <label class="label">Grado y Sección</label>
-              <p class="font-medium text-text-main">5to Grado - Sección A</p>
+              <p class="font-medium text-text-main" id="estudiante-grado">—</p>
             </div>
             <div>
               <label class="label">Año Escolar</label>
-              <p class="font-medium text-text-main">Año Escolar 2025-2026</p>
+              <p class="font-medium text-text-main" id="estudiante-ano">—</p>
             </div>
           </div>
         </div>
       </div>
 
+      <!-- Attendance Summary -->
+      <div class="card mb-8 hidden" id="asistencia-card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold text-text-main">Resumen de Asistencia</h2>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="text-center p-3 bg-bg-alt rounded-lg">
+              <p class="text-2xl font-bold text-text-main" id="asistencia-clases">0</p>
+              <p class="text-sm text-text-muted">Clases Totales</p>
+            </div>
+            <div class="text-center p-3 bg-success-50 rounded-lg">
+              <p class="text-2xl font-bold text-success-600" id="asistencia-presentes">0</p>
+              <p class="text-sm text-text-muted">Asistencias</p>
+            </div>
+            <div class="text-center p-3 bg-error-50 rounded-lg">
+              <p class="text-2xl font-bold text-error-600" id="asistencia-inasistencias">0</p>
+              <p class="text-sm text-text-muted">Inasistencias</p>
+            </div>
+            <div class="text-center p-3 bg-warning-50 rounded-lg">
+              <p class="text-2xl font-bold text-warning-600" id="asistencia-justificadas">0</p>
+              <p class="text-sm text-text-muted">Justificadas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grades Table -->
+      <div class="card mb-8 hidden" id="calificaciones-card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold text-text-main">Calificaciones por Lapso</h2>
+        </div>
+        <div class="card-body">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="text-left text-text-muted text-sm">
+                  <th class="pb-3 font-medium">Asignatura</th>
+                  <th class="pb-3 font-medium text-center">Lapso 1</th>
+                  <th class="pb-3 font-medium text-center">Lapso 2</th>
+                  <th class="pb-3 font-medium text-center">Lapso 3</th>
+                  <th class="pb-3 font-medium text-center">Definitiva</th>
+                  <th class="pb-3 font-medium text-center">Literal</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border" id="calificaciones-tbody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Actions -->
-      <div class="flex flex-wrap gap-4 mb-8">
-        <button 
-          id="download-boleta" 
-          class="btn btn-primary" 
-          onclick="downloadBoleta()"
-        >
+      <div class="flex flex-wrap gap-4 mb-8 hidden" id="actions-card">
+        <button id="download-boleta" class="btn btn-primary">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" />
           </svg>
           Descargar Boleta PDF
         </button>
-        
-        <button class="btn btn-secondary" onclick="previewBoleta()">
+        <button id="preview-boleta" class="btn btn-secondary">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -62,62 +131,138 @@ import Navigation from '@/components/navigation/Navigation.astro';
         </button>
       </div>
 
-      <!-- Info -->
-      <div class="card bg-blue-50 border-blue-200">
-        <div class="card-body">
-          <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
-            <div>
-              <h3 class="font-medium text-blue-800">Información del PDF</h3>
-              <p class="text-sm text-blue-700 mt-1">El PDF se genera vectorialmente en el navegador (jsPDF) con peso inferior a 50KB. Incluye: calificaciones por lapso, nota definitiva ponderada, literal cualitativo y resumen de asistencia.</p>
-            </div>
-          </div>
-        </div>
+      <!-- Loading / Error -->
+      <div id="loading-state" class="text-center py-8 text-text-muted">
+        <p>Cargando datos del boletín...</p>
+      </div>
+      <div id="error-state" class="hidden text-center py-8 text-error-600">
+        <p id="error-message">Error al cargar datos del boletín.</p>
       </div>
     </div>
   </main>
 </Layout>
 
-<script is:inline>
-  async function downloadBoleta() {
-    const btn = document.getElementById('download-boleta');
-    const originalText = btn.innerHTML;
-    
+<script>
+  import { apiGet } from '@/lib/api';
+
+  const matriculaSelect = document.getElementById('matricula-select');
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorMessage = document.getElementById('error-message');
+
+  let boletaData = null;
+
+  function showError(msg) {
+    loadingState.classList.add('hidden');
+    errorState.classList.remove('hidden');
+    errorMessage.textContent = msg;
+  }
+
+  // Load students for this representative
+  async function loadStudents() {
     try {
-      btn.disabled = document.getElementById('download-boleta').disabled = true;
-      btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /> Generando PDF...';
-      
-      // Obtener el ID de matrícula del estudiante (en producción vendría del JWT o contexto)
-      const matriculaId = '55555555-5555-4555-a555-555555555555';
-      
-      const response = await fetch(`/api/reportes/boleta-data/${matriculaId}`, {
-        headers: {
-          'Authorization': 'Bearer ' + localStorage.getItem('token'),
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener datos de la boleta');
+      const data = await apiGet('/api/representante/mis-estudiantes');
+      const estudiantes = data.estudiantes || data;
+
+      if (!estudiantes.length) {
+        showError('No tienes estudiantes asociados. Contacta a la administración.');
+        return;
       }
-      
-      const data = await response.json();
-      
-      // Generar PDF con jsPDF en el cliente
-      const { downloadBoletaPDF } = await import('/lib/pdf-generator.js');
-      downloadBoletaPDF(data, `boleta_${data.estudiante.cedula_escolar}_${new Date().toISOString().split('T')[0]}.pdf`);
-      
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error al generar la boleta: ' + error.message);
-    } finally {
-      document.getElementById('download-boleta').disabled = false;
-      btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" /> Descargar Boleta PDF</svg>';
+
+      matriculaSelect.innerHTML = estudiantes.map(e => 
+        `<option value="${e.matricula_id}">${e.nombres} ${e.apellidos} - ${e.nivel}-${e.seccion}</option>`
+      ).join('');
+
+      matriculaSelect.removeEventListener('change', loadBoleta);
+      matriculaSelect.addEventListener('change', loadBoleta);
+
+      loadBoleta();
+    } catch (err) {
+      showError('Error al cargar estudiantes: ' + err.message);
     }
   }
 
-  function previewBoleta() {
-    alert('Función de vista previa - En implementación completa abriría un modal con la boleta renderizada en canvas/PDF.js');
+  // Load boleta data for selected student
+  async function loadBoleta() {
+    const matriculaId = matriculaSelect.value;
+    if (!matriculaId) return;
+
+    loadingState.classList.remove('hidden');
+    errorState.classList.add('hidden');
+
+    try {
+      boletaData = await apiGet(`/api/reportes/boleta-data/${matriculaId}`);
+      renderBoleta(boletaData);
+      loadingState.classList.add('hidden');
+    } catch (err) {
+      showError('Error al cargar boletín: ' + err.message);
+    }
   }
+
+  // Render boleta data into the UI
+  function renderBoleta(data) {
+    const e = data.estudiante;
+
+    document.getElementById('estudiante-nombre').textContent = `${e.nombres} ${e.apellidos}`;
+    document.getElementById('estudiante-cedula').textContent = e.cedula_escolar;
+    document.getElementById('estudiante-grado').textContent = e.grado_seccion;
+    document.getElementById('estudiante-ano').textContent = e.ano_escolar;
+    document.getElementById('student-selector-card').classList.add('hidden');
+    document.getElementById('student-info-card').classList.remove('hidden');
+
+    // Attendance
+    const a = data.asistencia_resumen;
+    document.getElementById('asistencia-clases').textContent = a.clases_totales;
+    document.getElementById('asistencia-presentes').textContent = a.asistencias;
+    document.getElementById('asistencia-inasistencias').textContent = a.inasistencias;
+    document.getElementById('asistencia-justificadas').textContent = a.justificadas;
+    document.getElementById('asistencia-card').classList.remove('hidden');
+
+    // Grades table
+    const tbody = document.getElementById('calificaciones-tbody');
+    const sistema = data.periodo_config.sistema_evaluacion;
+    const mostrarLiteral = sistema === 'CUALITATIVO_AE';
+
+    tbody.innerHTML = data.calificaciones_lapsos.map(c => `
+      <tr class="hover:bg-bg-alt">
+        <td class="py-3 font-medium text-text-main">${c.asignatura}</td>
+        <td class="py-3 text-center text-text-main">${c.lapso_1 !== null ? c.lapso_1 : '—'}</td>
+        <td class="py-3 text-center text-text-main">${c.lapso_2 !== null ? c.lapso_2 : '—'}</td>
+        <td class="py-3 text-center text-text-main">${c.lapso_3 !== null ? c.lapso_3 : '—'}</td>
+        <td class="py-3 text-center font-bold text-primary-600">${c.nota_definitiva_anual !== null ? c.nota_definitiva_anual : '—'}</td>
+        <td class="py-3 text-center">${mostrarLiteral && c.literal_cualitativo ? `<span class="badge badge-primary">${c.literal_cualitativo}</span>` : '—'}</td>
+      </tr>
+    `).join('');
+    document.getElementById('calificaciones-card').classList.remove('hidden');
+
+    // Actions
+    document.getElementById('actions-card').classList.remove('hidden');
+  }
+
+  // Download PDF
+  document.getElementById('download-boleta')?.addEventListener('click', async () => {
+    if (!boletaData) return;
+    const btn = document.getElementById('download-boleta');
+    const originalHtml = btn.innerHTML;
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /> Generando PDF...';
+
+      const { downloadBoletaPDF } = await import('@/lib/pdf-generator');
+      downloadBoletaPDF(boletaData, `boleta_${boletaData.estudiante.cedula_escolar}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      alert('Error al generar boleta: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  });
+
+  document.getElementById('preview-boleta')?.addEventListener('click', () => {
+    alert('Vista previa — funcionalidad en desarrollo. Usa "Descargar Boleta PDF" para obtener el archivo.');
+  });
+
+  // Init
+  loadStudents();
 </script>

@@ -1,14 +1,15 @@
 import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
-import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   adapter: cloudflare(),
-  integrations: [tailwind(), sitemap()],
+  integrations: [sitemap()],
   output: 'server',
   site: 'https://sge.pages.dev',
   vite: {
+    plugins: [tailwindcss()],
     ssr: {
       external: ['@astrojs/cloudflare']
     }

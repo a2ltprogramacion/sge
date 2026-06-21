@@ -36,7 +36,7 @@ const { userRole = 'REPRESENTANTE', userName = 'Usuario' } = Astro.props;
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm0 0c0 2.5-4.5 4.5-6 4.5s-6-2-6-4.5c0-2.5 2.5-2.5 2.5-2.5 0-.654.222-1.275.6-1.772C5.358 10.573 6.75 9.6 8.25 9.6c1.5 0 2.893.975 3.353 2.238.378.497.6.818.6 1.172 0 2-4.5 4.5-4.5 4.5z" />
           </svg>
         </button>
-        <a href="/login" class="btn btn-primary">Cerrar sesión</a>
+        <a href="/logout" class="btn btn-primary">Cerrar sesión</a>
       </div>
 
       <!-- Mobile Menu Button -->
@@ -58,12 +58,12 @@ const { userRole = 'REPRESENTANTE', userName = 'Usuario' } = Astro.props;
         <p class="font-medium text-text-main">{userName}</p>
         <p class="text-sm text-text-muted capitalize">{userRole.toLowerCase()}</p>
       </div>
-      <a href="/login" class="btn btn-primary text-sm">Cerrar sesión</a>
+      <a href="/logout" class="btn btn-primary text-sm">Cerrar sesión</a>
     </div>
   </div>
 </header>
 
-<script is:inline>
+<script>
   // Navigation configuration by role
   const NAV_CONFIG = {
     ADMINISTRADOR: [

@@ -1,0 +1,158 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
+---
+
+<Layout title="Configuración del Plantel" description="Administrar configuración general del plantel educativo">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="ADMINISTRADOR" userName={`${user.nombres} ${user.apellidos}`} />
+
+    <div class="max-w-3xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-main mb-2">Configuración del Plantel</h1>
+        <p class="text-text-muted">Administrar configuración general del sistema</p>
+      </div>
+
+      <div class="card mb-8">
+        <div class="card-body">
+          <form id="config-form" class="space-y-6">
+            <div>
+              <label class="label" for="nombre_plantel">Nombre del Plantel</label>
+              <input id="nombre_plantel" name="nombre_plantel" type="text" class="input w-full" required />
+            </div>
+
+            <div>
+              <label class="label" for="periodo_id">Año Escolar Activo</label>
+              <select id="periodo_id" name="periodo_id" class="input w-full" required>
+                <option value="">Cargando periodos...</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="label" for="sistema_evaluacion">Sistema de Evaluación por Defecto</label>
+              <select id="sistema_evaluacion" name="sistema_evaluacion" class="input w-full">
+                <option value="NUMERICO_20">Numérico (0–20)</option>
+                <option value="CUALITATIVO_AE">Cualitativo (A–E)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="label" for="telefono">Teléfono de Contacto</label>
+              <input id="telefono" name="telefono" type="tel" class="input w-full" />
+            </div>
+
+            <div>
+              <label class="label" for="direccion">Dirección</label>
+              <textarea id="direccion" name="direccion" class="input w-full" rows="3"></textarea>
+            </div>
+
+            <div class="flex items-center gap-4">
+              <button type="submit" id="btn-save" class="btn btn-primary">
+                Guardar Configuración
+              </button>
+              <span id="save-message" class="hidden text-sm"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div id="loading-state" class="text-center py-8 text-text-muted">
+        <p>Cargando configuración...</p>
+      </div>
+      <div id="error-state" class="hidden text-center py-8 text-error-600">
+        <p id="error-message">Error al cargar la configuración.</p>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { apiGet, apiFetch } from '@/lib/api';
+
+  const form = document.getElementById('config-form');
+  const btnSave = document.getElementById('btn-save');
+  const saveMessage = document.getElementById('save-message');
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorMessage = document.getElementById('error-message');
+
+  function showError(msg) {
+    loadingState.classList.add('hidden');
+    errorState.classList.remove('hidden');
+    errorMessage.textContent = msg;
+  }
+
+  function setMessage(msg, type) {
+    saveMessage.textContent = msg;
+    saveMessage.className = `text-sm ${type === 'success' ? 'text-success-600' : 'text-error-600'}`;
+    saveMessage.classList.remove('hidden');
+    setTimeout(() => saveMessage.classList.add('hidden'), 5000);
+  }
+
+  async function loadConfig() {
+    try {
+      const [config, periodos] = await Promise.all([
+        apiGet('/api/admin/configuracion'),
+        apiGet('/api/admin/periodos'),
+      ]);
+
+      document.getElementById('nombre_plantel').value = config.nombre_plantel || '';
+      document.getElementById('telefono').value = config.telefono || '';
+      document.getElementById('direccion').value = config.direccion || '';
+      document.getElementById('sistema_evaluacion').value = config.sistema_evaluacion || 'NUMERICO_20';
+
+      const periodoSelect = document.getElementById('periodo_id');
+      const periodosList = periodos.periodos || periodos;
+      periodoSelect.innerHTML = periodosList.map(p =>
+        `<option value="${p.id}" ${p.activo ? 'selected' : ''}>${p.nombre}</option>`
+      ).join('');
+
+      loadingState.classList.add('hidden');
+    } catch (err) {
+      showError('Error al cargar configuración: ' + err.message);
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    btnSave.disabled = true;
+    btnSave.innerHTML = 'Guardando...';
+    saveMessage.classList.add('hidden');
+
+    try {
+      const data = {
+        nombre_plantel: document.getElementById('nombre_plantel').value,
+        periodo_id: parseInt(document.getElementById('periodo_id').value, 10),
+        sistema_evaluacion: document.getElementById('sistema_evaluacion').value,
+        telefono: document.getElementById('telefono').value,
+        direccion: document.getElementById('direccion').value,
+      };
+
+      await apiFetch('/api/admin/configuracion', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      });
+
+      setMessage('Configuración guardada exitosamente.', 'success');
+    } catch (err) {
+      setMessage('Error al guardar: ' + err.message, 'error');
+    } finally {
+      btnSave.disabled = false;
+      btnSave.innerHTML = 'Guardar Configuración';
+    }
+  });
+
+  loadConfig();
+</script>

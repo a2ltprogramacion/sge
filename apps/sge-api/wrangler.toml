@@ -3,16 +3,24 @@ main = "src/index.ts"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
+# =============================================================================
+# [vars] — Solo valores no sensibles para desarrollo local.
+# JWT_SECRET y VAPID_PRIVATE_KEY viven en .dev.vars (local) o en
+# `wrangler secret put` (producción). NUNCA en wrangler.toml.
+# =============================================================================
 [vars]
 ENVIRONMENT = "development"
 VAPID_SUBJECT = "mailto:admin@localhost"
-JWT_SECRET = "dev-secret-change-in-production-min-64-chars-hex"
+VAPID_PUBLIC_KEY = "BEl69b1deb4d3b7bad9bdd2b0d7b3dcb6df4a2a0f15ba41f2a3c9d19a18d1e45819b1deb4d3b7bad9bdd2b"
 PUBLIC_API_URL = "http://localhost:8787"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "sge-db-prod"
+# ── IMPORTANTE ──────────────────────────────────────────────────────────────
+# Reemplazar con el UUID real de `wrangler d1 create sge-db-prod`:
 database_id = "local-dev-placeholder"
+# ─────────────────────────────────────────────────────────────────────────────
 
 [[r2_buckets]]
 binding = "BUCKET_COMPROBANTES"
@@ -24,4 +32,39 @@ binding = "ASSETS"
 directory = "../sge-frontend/dist"
 
 [observability]
+enabled = true
+
+# =============================================================================
+# Entorno: producción
+# Uso: wrangler deploy --env production
+# =============================================================================
+[env.production]
+name = "sge-api-prod"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production.vars]
+ENVIRONMENT = "production"
+VAPID_SUBJECT = "mailto:admin@a2lt-soluciones.com"
+# VAPID_PUBLIC_KEY no es secreto — puede ir aquí
+VAPID_PUBLIC_KEY = "BEl69b1deb4d3b7bad9bdd2b0d7b3dcb6df4a2a0f15ba41f2a3c9d19a18d1e45819b1deb4d3b7bad9bdd2b"
+PUBLIC_API_URL = "https://sge-api-prod.your-subdomain.workers.dev"
+
+[env.production.d1_databases]
+binding = "DB"
+database_name = "sge-db-prod"
+# ── REEMPLAZAR ──────────────────────────────────────────────────────────────
+database_id = "00000000-0000-0000-0000-000000000000"
+# ─────────────────────────────────────────────────────────────────────────────
+
+[env.production.r2_buckets]
+binding = "BUCKET_COMPROBANTES"
+bucket_name = "sge-comprobantes-prod"
+preview_bucket_name = "sge-comprobantes-prod-preview"
+
+[env.production.assets]
+binding = "ASSETS"
+directory = "../sge-frontend/dist"
+
+[env.production.observability]
 enabled = true

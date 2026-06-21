@@ -1,0 +1,98 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+import { apiGet } from '@/lib/api';
+
+interface Props {
+  user: {
+    id: string;
+    email: string;
+    rol: string;
+    nombres: string;
+    apellidos: string;
+  };
+}
+
+const { user } = Astro.props;
+
+const secciones = await apiGet('/api/docente/secciones');
+const asignaturas = await apiGet('/api/docente/asignaturas');
+const planesExistentes = await apiGet('/api/docente/planes');
+---
+
+<Layout title="Planes de Evaluación" description="Gestión de planes de evaluación">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="DOCENTE" userName="{user.nombres} {user.apellidos}" />
+
+    <div class="max-w-6xl mx-auto">
+      <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-text-main mb-2">Planes de Evaluación</h1>
+          <p class="text-text-muted">Crea y gestiona los planes de evaluación para tus secciones</p>
+        </div>
+        <a href="/docente/planes/crear" class="btn btn-primary">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Nuevo Plan
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold text-text-main">Mis Planes de Evaluación</h2>
+        </div>
+        <div class="card-body">
+          {planesExistentes && planesExistentes.length > 0 ? (
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="text-left text-text-muted text-sm">
+                    <th class="pb-3 font-medium">Plan</th>
+                    <th class="pb-3 font-medium">Sección</th>
+                    <th class="pb-3 font-medium">Asignatura</th>
+                    <th class="pb-3 font-medium">Lapso</th>
+                    <th class="pb-3 font-medium">Evaluaciones</th>
+                    <th class="pb-3 font-medium">Estado</th>
+                    <th class="pb-3 font-medium">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  {planesExistentes.map((plan) => (
+                    <tr class="hover:bg-bg-alt">
+                      <td class="py-4">
+                        <span class="font-medium text-text-main">{plan.asignatura_nombre} - Lapso {plan.lapso}</span>
+                      </td>
+                      <td class="py-4 text-text-muted">{plan.seccion_nivel}-{plan.seccion_letra}</td>
+                      <td class="py-4 text-text-main">{plan.asignatura_nombre}</td>
+                      <td class="py-4 text-text-muted">Lapso {plan.lapso}</td>
+                      <td class="py-4 text-text-muted">{plan.evaluaciones_count || 0}</td>
+                      <td class="py-4">
+                        <span class="badge badge-primary">{plan.fecha_aprobacion ? 'Aprobado' : 'Borrador'}</span>
+                      </td>
+                      <td class="py-4">
+                        <div class="flex gap-2">
+                          <a href={`/docente/planes/${plan.id}`} class="btn btn-sm btn-outline">Ver</a>
+                          <a href={`/docente/planes/${plan.id}/editar`} class="btn btn-sm btn-outline">Editar</a>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div class="text-center py-8 text-text-muted">
+                <svg class="w-12 h-12 mx-auto text-text-muted/50 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 002-2h-2M9 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2z" />
+                </svg>
+                <p class="text-text-muted">No tienes planes de evaluación creados</p>
+                <a href="/docente/planes/crear" class="btn btn-primary mt-4">Crear mi primer plan</a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>

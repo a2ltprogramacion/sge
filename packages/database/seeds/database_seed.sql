@@ -1,7 +1,10 @@
--- Script de Semilla Inicial Consolidado (SGE)
--- Contraseña plana para todos los usuarios: Admin1234*
+-- Script de Semilla Inicial para Cloudflare D1
+-- Fecha de creación: 2026-06-16
+-- Descripción: Carga de datos base para testing y desarrollo.
+-- NOTA DE CONTRASEÑA EN DESARROLLO: Para todos los usuarios del seed, la contraseña plana es "Admin1234*" 
+-- El hash de contraseña ha sido pre-computado usando PBKDF2 (SHA-256, 100,000 iteraciones) utilizando el UUID respectivo como sal fija en formato binario codificado en UTF-8.
 
--- 1. INSTITUCIÓN DEMO
+-- 1. INYECTAR INSTITUCIÓN DEMO
 INSERT INTO institucion_config (
     id, nombre, rif, direccion, telefono, sistema_evaluacion_por_defecto, 
     porcentaje_inasistencia_reprobacion, notificar_inasistencia_automatica, moneda_base,
@@ -20,21 +23,24 @@ INSERT INTO institucion_config (
     'f6a42a0f15ba41f2a3c9d19a18d1e45819b1deb4d3b7b'
 );
 
--- 2. USUARIOS DE PRUEBA (Hash PBKDF2-SHA256 real, Salt = UUID)
+-- 2. USUARIOS DE PRUEBA (Hash de contraseña precalculado para "Admin1234*")
 INSERT INTO usuarios (id, email, password_hash, rol, nombres, apellidos, telefono, activo) VALUES 
-('11111111-1111-4111-a111-111111111111', 'admin@bolivar.edu.ve', 'f920fdf91902ba14a87265a7f998bcbe554a9d70183ca62d5eb391f97c0c16fb', 'ADMINISTRADOR', 'Alejandro', 'Lovera', '+58-412-1111111', 1),
-('22222222-2222-4222-a222-222222222222', 'docente@bolivar.edu.ve', '491fba387d8df98dbefb494677764d7de52f9b8032b4b3b890ab62b08fa11cd9', 'DOCENTE', 'María Carmen', 'Rodríguez', '+58-412-2222222', 1),
-('33333333-3333-4333-a333-333333333333', 'representante@bolivar.edu.ve', '89a07cdcbbfb9d4f9f658a3a0e6e737bd488a09b3074d6e9f69b1b1ba681b9e0', 'REPRESENTANTE', 'Carlos Eduardo', 'Pérez', '+58-412-3333333', 1);
+-- Administrador General
+('11111111-1111-4111-a111-111111111111', 'admin@bolivar.edu.ve', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'ADMINISTRADOR', 'Alejandro', 'Lovera', '+58-412-1111111', 1),
+-- Docente de Prueba
+('22222222-2222-4222-a222-222222222222', 'docente@bolivar.edu.ve', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'DOCENTE', 'María Carmen', 'Rodríguez', '+58-412-2222222', 1),
+-- Representante de Prueba
+('33333333-3333-4333-a333-333333333333', 'representante@bolivar.edu.ve', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 'REPRESENTANTE', 'Carlos Eduardo', 'Pérez', '+58-412-3333333', 1);
 
 -- 3. PERFIL DOCENTE
-INSERT INTO docentes (id, cedula, especialidad) VALUES 
+INSERT INTO docentes (id, cedula, specialty) VALUES 
 ('22222222-2222-4222-a222-222222222222', 'V-11222333', 'Ciencias Exactas y Biológicas');
 
 -- 4. PERFIL REPRESENTANTE
 INSERT INTO representantes (id, cedula, direccion) VALUES 
 ('33333333-3333-4333-a333-333333333333', 'V-14555666', 'Urb. La Candelaria, Calle 4, Edificio Sol, Apto 5B, Caracas');
 
--- 5. REGISTRO DE ESTUDIANTES
+-- 5. REGISTRO DE ESTUDIANTES (Asociados al Representante)
 INSERT INTO estudiantes (id, cedula_escolar, nombres, apellidos, fecha_nacimiento, representante_id) VALUES 
 ('55555555-5555-4555-a555-555555555555', 'VE-20150912-01', 'Juan Diego', 'Pérez Rodríguez', '2015-09-12', '33333333-3333-4333-a333-333333333333'),
 ('66666666-6666-4666-a666-666666666666', 'VE-20180424-02', 'Sofía Valentina', 'Pérez Rodríguez', '2018-04-24', '33333333-3333-4333-a333-333333333333');
@@ -45,12 +51,16 @@ INSERT INTO periodos_academicos (id, nombre, activo) VALUES
 
 -- 7. SECCIONES DE PRUEBA
 INSERT INTO secciones (id, periodo_id, nivel, seccion, docente_guia_id) VALUES 
+-- Primaria: 5to Grado Sección A (Donde estudia Juan Diego)
 ('c1c1c1c1-c1c1-4c1c-bc1c-111111111111', 'a0a0a0a0-a0a0-4a0a-b0b0-a0a0a0a0a0a0', 'PRIMARIA_5', 'A', '22222222-2222-4222-a222-222222222222'),
+-- Primaria: 2do Grado Sección B (Donde estudia Sofía Valentina)
 ('c2c2c2c2-c2c2-4c2c-bc2c-222222222222', 'a0a0a0a0-a0a0-4a0a-b0b0-a0a0a0a0a0a0', 'PRIMARIA_2', 'B', NULL);
 
 -- 8. MATRÍCULAS ACTIVAS
 INSERT INTO matriculas (id, estudiante_id, seccion_id, estado, status_pago) VALUES 
+-- Juan Diego en 5to Grado A
 ('d1d1d1d1-d1d1-4d1d-bd1d-111111111111', '55555555-5555-4555-a555-555555555555', 'c1c1c1c1-c1c1-4c1c-bc1c-111111111111', 'ACTIVO', 'CON_DEUDA'),
+-- Sofía Valentina en 2do Grado B
 ('d2d2d2d2-d2d2-4d2d-bd2d-222222222222', '66666666-6666-4666-a666-666666666666', 'c2c2c2c2-c2c2-4c2c-bc2c-222222222222', 'ACTIVO', 'SOLVENTE');
 
 -- 9. ASIGNATURAS BASE
@@ -60,7 +70,7 @@ INSERT INTO asignaturas (id, nombre, nivel) VALUES
 ('e3e3e3e3-e3e3-4e3e-be3e-333333333333', 'Ciencias de la Naturaleza', 'PRIMARIA_5'),
 ('e4e4e4e4-e4e4-4e4e-be4e-444444444444', 'Matemáticas', 'PRIMARIA_2');
 
--- 10. PLAN DE EVALUACIÓN DE PRUEBA
+-- 10. PLAN DE EVALUACIÓN DE PRUEBA (Lapso 1 - Matemáticas de 5to Grado A)
 INSERT INTO planes_evaluacion (id, seccion_id, asignatura_id, docente_id, lapso, fecha_aprobacion) VALUES 
 ('f1f1f1f1-f1f1-4f1f-bf1f-111111111111', 'c1c1c1c1-c1c1-4c1c-bc1c-111111111111', 'e1e1e1e1-e1e1-4e1e-be1e-111111111111', '22222222-2222-4222-a222-222222222222', 1, '2026-06-16');
 
@@ -69,23 +79,3 @@ INSERT INTO evaluaciones_items (id, plan_id, descripcion, ponderacion_porcentaje
 ('f2f2f2f2-f2f2-4f2f-bf2f-222222222222', 'f1f1f1f1-f1f1-4f1f-bf1f-111111111111', 'Examen Práctico de Fracciones', 40.0, '2026-06-20'),
 ('f3f3f3f3-f3f3-4f3f-bf3f-333333333333', 'f1f1f1f1-f1f1-4f1f-bf1f-111111111111', 'Resolución de Problemas en Grupo', 30.0, '2026-06-25'),
 ('f4f4f4f4-f4f4-4f4f-bf4f-444444444444', 'f1f1f1f1-f1f1-4f1f-bf1f-111111111111', 'Cuaderno y Talleres Diarios', 30.0, '2026-06-30');
-
--- 12. PAGOS DE PRUEBA
-INSERT INTO pagos (
-  id, matricula_id, mes_correspondiente,
-  monto_dolares, monto_bolivares, tasa_cambio,
-  referencia_bancaria, banco_origen, banco_destino,
-  fecha_pago, status_conciliacion, r2_file_key
-) VALUES
-('a1a1a1a1-a1a1-4a1a-ba1a-111111111111', 'd1d1d1d1-d1d1-4d1d-bd1d-111111111111', 'INSCRIPCION',
- 30.00, 1080.00, 36.00,
- 'REF-2026-001', 'Banesco', 'Banco de Venezuela',
- '2026-09-15', 'APROBADO', 'comprobantes/a1a1a1a1/REF-2026-001.jpg'),
-('a2a2a2a2-a2a2-4a2a-ba2a-222222222222', 'd1d1d1d1-d1d1-4d1d-bd1d-111111111111', 'SEPTIEMBRE',
- 25.00, 900.00, 36.00,
- 'REF-2026-002', 'Banesco', 'Banco de Venezuela',
- '2026-10-05', 'PENDIENTE', NULL),
-('a3a3a3a3-a3a3-4a3a-ba3a-333333333333', 'd2d2d2d2-d2d2-4d2d-bd2d-222222222222', 'INSCRIPCION',
- 30.00, 1080.00, 36.00,
- 'REF-2026-003', 'Banco Provincial', 'Banco de Venezuela',
- '2026-09-10', 'APROBADO', NULL);

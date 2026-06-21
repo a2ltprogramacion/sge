@@ -10,9 +10,10 @@ const user = Astro.locals.user as {
   nombres: string;
   apellidos: string;
 };
+const token = Astro.locals.token as string;
 
-const secciones = await apiGet('/api/docente/secciones');
-const planes = await apiGet('/api/docente/planes');
+const secciones = await apiGet('/api/docente/secciones', token);
+const planes = await apiGet('/api/docente/planes', token);
 ---
 
 <Layout title="Calificaciones" description="Carga y revisión de calificaciones">

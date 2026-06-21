@@ -6,6 +6,8 @@ const API_URL = import.meta.env.PUBLIC_API_URL || "http://127.0.0.1:8787";
 
 /**
  * Obtiene el token JWT del localStorage (solo en cliente).
+ * En SSR retorna null — las páginas que necesiten hacer API calls
+ * desde el servidor deben pasar el token explícitamente.
  */
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -15,9 +17,10 @@ function getToken(): string | null {
 /**
  * Cliente API unificado con inyección automática de JWT.
  * Maneja errores RFC 7807 del backend.
+ * En SSR pasar token explícitamente.
  */
-export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
+export async function apiFetch<T>(endpoint: string, options: RequestInit = {}, ssrToken?: string): Promise<T> {
+  const token = ssrToken || getToken();
 
   const headers = new Headers(options.headers);
   headers.set("Content-Type", "application/json");
@@ -46,36 +49,40 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
 
 /**
  * Helper para peticiones GET.
+ * En SSR pasar token explícitamente.
  */
-export async function apiGet<T>(endpoint: string): Promise<T> {
-  return apiFetch<T>(endpoint, { method: "GET" });
+export async function apiGet<T>(endpoint: string, ssrToken?: string): Promise<T> {
+  return apiFetch<T>(endpoint, { method: "GET" }, ssrToken);
 }
 
 /**
  * Helper para peticiones POST.
+ * En SSR pasar token explícitamente.
  */
-export async function apiPost<T>(endpoint: string, body: unknown): Promise<T> {
+export async function apiPost<T>(endpoint: string, body: unknown, ssrToken?: string): Promise<T> {
   return apiFetch<T>(endpoint, {
     method: "POST",
     body: JSON.stringify(body),
-  });
+  }, ssrToken);
 }
 
 /**
  * Helper para peticiones PUT.
+ * En SSR pasar token explícitamente.
  */
-export async function apiPut<T>(endpoint: string, body: unknown): Promise<T> {
+export async function apiPut<T>(endpoint: string, body: unknown, ssrToken?: string): Promise<T> {
   return apiFetch<T>(endpoint, {
     method: "PUT",
     body: JSON.stringify(body),
-  });
+  }, ssrToken);
 }
 
 /**
  * Helper para peticiones DELETE.
+ * En SSR pasar token explícitamente.
  */
-export async function apiDelete<T>(endpoint: string): Promise<T> {
-  return apiFetch<T>(endpoint, { method: "DELETE" });
+export async function apiDelete<T>(endpoint: string, ssrToken?: string): Promise<T> {
+  return apiFetch<T>(endpoint, { method: "DELETE" }, ssrToken);
 }
 
 /**

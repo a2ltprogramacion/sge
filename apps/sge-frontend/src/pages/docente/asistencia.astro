@@ -10,8 +10,9 @@ const user = Astro.locals.user as {
   nombres: string;
   apellidos: string;
 };
+const token = Astro.locals.token as string;
 
-const secciones = await apiGet('/api/docente/secciones');
+const secciones = await apiGet('/api/docente/secciones', token);
 ---
 
 <Layout title="Asistencia Diaria" description="Registro de asistencia diaria">

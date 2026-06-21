@@ -129,6 +129,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       nombres: payload.nombres,
       apellidos: payload.apellidos,
     };
+    context.locals.token = token;
 
   } catch (err) {
     console.error("[Middleware] Error processing auth:", err);

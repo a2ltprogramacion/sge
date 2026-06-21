@@ -1,0 +1,128 @@
+---
+// Navigation component - Dynamic based on user role (rendered client-side)
+interface Props {
+  userRole?: 'ADMINISTRADOR' | 'DOCENTE' | 'REPRESENTANTE';
+  userName?: string;
+}
+
+const { userRole = 'REPRESENTANTE', userName = 'Usuario' } = Astro.props;
+---
+
+<header class="sticky top-0 z-50 bg-bg-elevated border-b border-border shadow-sm">
+  <nav class="container mx-auto px-4" aria-label="Navegación principal">
+    <div class="flex h-16 items-center justify-between">
+      <!-- Logo/Brand -->
+      <div class="flex items-center gap-2">
+        <a href="/" class="flex items-center gap-2" aria-label="SGE - Inicio">
+          <svg class="w-8 h-8 text-primary-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
+          </svg>
+          <span class="font-heading text-xl font-bold text-text-main">SGE</span>
+        </a>
+      </div>
+
+      <!-- Desktop Navigation - Will be populated by client-side script -->
+      <div class="hidden md:flex items-center gap-6" id="desktop-nav" data-user-role={userRole}>
+      </div>
+
+      <!-- User Menu -->
+      <div class="flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-2 text-sm" id="user-info">
+          <span class="text-text-muted">{userName}</span>
+          <span class="badge badge-primary capitalize">{userRole.toLowerCase()}</span>
+        </div>
+        <button class="btn btn-ghost p-2" aria-label="Menú de usuario">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm0 0c0 2.5-4.5 4.5-6 4.5s-6-2-6-4.5c0-2.5 2.5-2.5 2.5-2.5 0-.654.222-1.275.6-1.772C5.358 10.573 6.75 9.6 8.25 9.6c1.5 0 2.893.975 3.353 2.238.378.497.6.818.6 1.172 0 2-4.5 4.5-4.5 4.5z" />
+          </svg>
+        </button>
+        <a href="/login" class="btn btn-primary">Cerrar sesión</a>
+      </div>
+
+      <!-- Mobile Menu Button -->
+      <button class="md:hidden btn btn-ghost p-2" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="md:hidden hidden bg-bg-elevated border-t border-border" role="navigation" aria-label="Menú móvil">
+    <div class="container mx-auto px-4 py-4 space-y-3" id="mobile-nav">
+    </div>
+    <hr class="border-border" />
+    <div class="flex items-center justify-between px-4 py-2">
+      <div>
+        <p class="font-medium text-text-main">{userName}</p>
+        <p class="text-sm text-text-muted capitalize">{userRole.toLowerCase()}</p>
+      </div>
+      <a href="/login" class="btn btn-primary text-sm">Cerrar sesión</a>
+    </div>
+  </div>
+</header>
+
+<script is:inline>
+  // Navigation configuration by role
+  const NAV_CONFIG = {
+    ADMINISTRADOR: [
+      { href: '/admin/dashboard', label: 'Dashboard' },
+      { href: '/admin/usuarios', label: 'Usuarios' },
+      { href: '/admin/reportes', label: 'Reportes' },
+      { href: '/admin/configuracion', label: 'Configuración' },
+    ],
+    DOCENTE: [
+      { href: '/docente/asistencia', label: 'Asistencia' },
+      { href: '/docente/calificaciones', label: 'Calificaciones' },
+      { href: '/docente/planes', label: 'Planes' },
+    ],
+    REPRESENTANTE: [
+      { href: '/representante/boletin', label: 'Boletín' },
+      { href: '/representante/pagos', label: 'Pagos' },
+      { href: '/representante/asistencia', label: 'Asistencia' },
+    ],
+  };
+
+  // Render navigation based on user role
+  const userRole = 'REPRESENTANTE'; // This should be passed from the page
+  const userName = 'Usuario'; // This should be passed from the page
+  
+  // In real implementation, these would come from the JWT token or page props
+  // For now, we'll use the data attributes passed from the template
+  
+  // Get the user role from the nav element
+  const desktopNav = document.getElementById('desktop-nav');
+  const mobileNav = document.getElementById('mobile-nav');
+  const userInfo = document.getElementById('user-info');
+  
+  if (desktopNav) {
+    const role = desktopNav.getAttribute('data-user-role') || 'REPRESENTANTE';
+    const navItems = NAV_CONFIG[role as keyof typeof NAV_CONFIG] || NAV_CONFIG.REPRESENTANTE;
+    
+    desktopNav.innerHTML = navItems.map(item => 
+      `<a href="${item.href}" class="text-sm font-medium text-text-muted hover:text-primary-600 transition-colors">${item.label}</a>`
+    ).join('');
+  }
+  
+  if (mobileNav) {
+    const role = desktopNav?.getAttribute('data-user-role') || 'REPRESENTANTE';
+    const navItems = NAV_CONFIG[role as keyof typeof NAV_CONFIG] || NAV_CONFIG.REPRESENTANTE;
+    
+    mobileNav.innerHTML = navItems.map(item => 
+      `<a href="${item.href}" class="block px-4 py-2 text-text-main hover:bg-primary-50 rounded-lg">${item.label}</a>`
+    ).join('');
+  }
+  
+  // Mobile menu toggle
+  const menuButton = document.querySelector('[aria-controls="mobile-menu"]');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  if (menuButton && mobileMenu) {
+    menuButton.addEventListener('click', () => {
+      const isExpanded = menuButton.getAttribute('aria-expanded') === 'true';
+      menuButton.setAttribute('aria-expanded', (!isExpanded).toString());
+      mobileMenu.classList.toggle('hidden');
+    });
+  }
+</script>

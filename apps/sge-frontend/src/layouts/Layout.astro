@@ -43,11 +43,26 @@ const socialImage = new URL('/assets/og-image.png', Astro.site);
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
-    <!-- Preconnect -->
+    <!-- Preconnect Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Fonts: Inter -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
+
+    <!-- Critical CSS Inline -->
+    <style is:inline>
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { margin: 0; }
+      .skip-link { position: absolute; top: -40px; left: 0; background: #2563eb; color: white; padding: 8px; z-index: 100; transition: top 0.3s; }
+      .skip-link:focus { top: 0; }
+    </style>
   </head>
   <body class="h-full flex flex-col antialiased">
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
     <slot />
     
     <!-- Service Worker Registration -->

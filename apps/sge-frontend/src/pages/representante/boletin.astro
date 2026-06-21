@@ -1,0 +1,123 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+---
+
+<Layout title="Boletín de Notas" description="Descargar boletín de notas del estudiante">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="REPRESENTANTE" userName="Carlos Pérez" />
+    
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-main mb-2">Boletín de Notas</h1>
+        <p class="text-text-muted">Descargar boletín oficial en formato PDF vectorial</p>
+      </div>
+
+      <!-- Student Info Card -->
+      <div class="card mb-8">
+        <div class="card-header">
+          <h2 class="text-xl font-semibold text-text-main">Datos del Estudiante</h2>
+        </div>
+        <div class="card-body">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="label">Estudiante</label>
+              <p class="font-medium text-text-main">Pérez Rodríguez, Juan Diego</p>
+            </div>
+            <div>
+              <label class="label">Cédula Escolar</label>
+              <p class="font-medium text-text-main">VE-20150912-01</p>
+            </div>
+            <div>
+              <label class="label">Grado y Sección</label>
+              <p class="font-medium text-text-main">5to Grado - Sección A</p>
+            </div>
+            <div>
+              <label class="label">Año Escolar</label>
+              <p class="font-medium text-text-main">Año Escolar 2025-2026</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-wrap gap-4 mb-8">
+        <button 
+          id="download-boleta" 
+          class="btn btn-primary" 
+          onclick="downloadBoleta()"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          Descargar Boleta PDF
+        </button>
+        
+        <button class="btn btn-secondary" onclick="previewBoleta()">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          Vista Previa
+        </button>
+      </div>
+
+      <!-- Info -->
+      <div class="card bg-blue-50 border-blue-200">
+        <div class="card-body">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <div>
+              <h3 class="font-medium text-blue-800">Información del PDF</h3>
+              <p class="text-sm text-blue-700 mt-1">El PDF se genera vectorialmente en el navegador (jsPDF) con peso inferior a 50KB. Incluye: calificaciones por lapso, nota definitiva ponderada, literal cualitativo y resumen de asistencia.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  async function downloadBoleta() {
+    const btn = document.getElementById('download-boleta');
+    const originalText = btn.innerHTML;
+    
+    try {
+      btn.disabled = document.getElementById('download-boleta').disabled = true;
+      btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /> Generando PDF...';
+      
+      // Obtener el ID de matrícula del estudiante (en producción vendría del JWT o contexto)
+      const matriculaId = '55555555-5555-4555-a555-555555555555';
+      
+      const response = await fetch(`/api/reportes/boleta-data/${matriculaId}`, {
+        headers: {
+          'Authorization': 'Bearer ' + localStorage.getItem('token'),
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener datos de la boleta');
+      }
+      
+      const data = await response.json();
+      
+      // Generar PDF con jsPDF en el cliente
+      const { downloadBoletaPDF } = await import('/lib/pdf-generator.js');
+      downloadBoletaPDF(data, `boleta_${data.estudiante.cedula_escolar}_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al generar la boleta: ' + error.message);
+    } finally {
+      document.getElementById('download-boleta').disabled = false;
+      btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" /> Descargar Boleta PDF</svg>';
+    }
+  }
+
+  function previewBoleta() {
+    alert('Función de vista previa - En implementación completa abriría un modal con la boleta renderizada en canvas/PDF.js');
+  }
+</script>

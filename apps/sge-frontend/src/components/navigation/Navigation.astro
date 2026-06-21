@@ -27,16 +27,20 @@ const { userRole = 'REPRESENTANTE', userName = 'Usuario' } = Astro.props;
 
       <!-- User Menu -->
       <div class="flex items-center gap-4">
-        <div class="hidden md:flex items-center gap-2 text-sm" id="user-info">
+        <div class="hidden md:flex items-center gap-2 text-sm">
           <span class="text-text-muted">{userName}</span>
           <span class="badge badge-primary capitalize">{userRole.toLowerCase()}</span>
         </div>
-        <button class="btn btn-ghost p-2" aria-label="Menú de usuario">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm0 0c0 2.5-4.5 4.5-6 4.5s-6-2-6-4.5c0-2.5 2.5-2.5 2.5-2.5 0-.654.222-1.275.6-1.772C5.358 10.573 6.75 9.6 8.25 9.6c1.5 0 2.893.975 3.353 2.238.378.497.6.818.6 1.172 0 2-4.5 4.5-4.5 4.5z" />
-          </svg>
-        </button>
-        <a href="/logout" class="btn btn-primary">Cerrar sesión</a>
+        <div class="relative" id="user-menu">
+          <button class="btn btn-ghost p-2" id="user-menu-button" aria-label="Menú de usuario" aria-expanded="false" aria-haspopup="true">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm0 0c0 2.5-4.5 4.5-6 4.5s-6-2-6-4.5c0-2.5 2.5-2.5 2.5-2.5 0-.654.222-1.275.6-1.772C5.358 10.573 6.75 9.6 8.25 9.6c1.5 0 2.893.975 3.353 2.238.378.497.6.818.6 1.172 0 2-4.5 4.5-4.5 4.5z" />
+            </svg>
+          </button>
+          <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-bg-elevated border border-border rounded-lg shadow-lg py-1 z-50" role="menu" aria-labelledby="user-menu-button">
+            <a href="/logout" class="block px-4 py-2 text-sm text-text-main hover:bg-bg-alt transition-colors" role="menuitem">Cerrar sesión</a>
+          </div>
+        </div>
       </div>
 
       <!-- Mobile Menu Button -->
@@ -85,16 +89,8 @@ const { userRole = 'REPRESENTANTE', userName = 'Usuario' } = Astro.props;
   };
 
   // Render navigation based on user role
-  const userRole = 'REPRESENTANTE'; // This should be passed from the page
-  const userName = 'Usuario'; // This should be passed from the page
-  
-  // In real implementation, these would come from the JWT token or page props
-  // For now, we'll use the data attributes passed from the template
-  
-  // Get the user role from the nav element
   const desktopNav = document.getElementById('desktop-nav');
   const mobileNav = document.getElementById('mobile-nav');
-  const userInfo = document.getElementById('user-info');
   
   if (desktopNav) {
     const role = desktopNav.getAttribute('data-user-role') || 'REPRESENTANTE';
@@ -112,6 +108,26 @@ const { userRole = 'REPRESENTANTE', userName = 'Usuario' } = Astro.props;
     mobileNav.innerHTML = navItems.map(item => 
       `<a href="${item.href}" class="block px-4 py-2 text-text-main hover:bg-primary-50 rounded-lg">${item.label}</a>`
     ).join('');
+  }
+  
+  // User dropdown menu toggle
+  const userMenuBtn = document.getElementById('user-menu-button');
+  const userDropdown = document.getElementById('user-dropdown');
+
+  if (userMenuBtn && userDropdown) {
+    userMenuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = userMenuBtn.getAttribute('aria-expanded') === 'true';
+      userMenuBtn.setAttribute('aria-expanded', (!isOpen).toString());
+      userDropdown.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+      userDropdown.classList.add('hidden');
+      userMenuBtn.setAttribute('aria-expanded', 'false');
+    });
+
+    userDropdown.addEventListener('click', (e) => e.stopPropagation());
   }
   
   // Mobile menu toggle

@@ -1,0 +1,90 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Navigation from '@/components/navigation/Navigation.astro';
+
+const user = Astro.locals.user as {
+  id: string;
+  email: string;
+  rol: string;
+  nombres: string;
+  apellidos: string;
+};
+---
+
+<Layout title="Reportes" description="Reportes administrativos del plantel">
+  <main id="main-content" class="flex-1 container mx-auto px-4 py-8">
+    <Navigation userRole="ADMINISTRADOR" userName={`${user.nombres} ${user.apellidos}`} />
+
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-text-main mb-2">Reportes</h1>
+        <p class="text-text-muted">Generar y consultar reportes del plantel</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <a href="/admin/dashboard" class="card hover:shadow-lg transition-shadow">
+          <div class="card-body">
+            <h2 class="text-xl font-semibold text-text-main mb-2">Dashboard General</h2>
+            <p class="text-text-muted">Métricas globales, alertas y salud financiera del instituto</p>
+          </div>
+        </a>
+
+        <a href="/admin/usuarios" class="card hover:shadow-lg transition-shadow">
+          <div class="card-body">
+            <h2 class="text-xl font-semibold text-text-main mb-2">Usuarios del Sistema</h2>
+            <p class="text-text-muted">Gestión y reporte de usuarios registrados</p>
+          </div>
+        </a>
+
+        <div class="card">
+          <div class="card-body">
+            <h2 class="text-xl font-semibold text-text-main mb-2">Boletines Académicos</h2>
+            <p class="text-text-muted mb-4">Consultar calificaciones, asistencia y notas por estudiante</p>
+            <div id="boletin-loading" class="text-sm text-text-muted">Cargando estudiantes...</div>
+            <div id="boletin-form" class="hidden space-y-3">
+              <select id="select-estudiante" class="input w-full">
+                <option value="">Seleccione un estudiante...</option>
+              </select>
+              <button id="btn-ver-boletin" class="btn btn-primary w-full" disabled>Ver Boletín</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <h2 class="text-xl font-semibold text-text-main mb-2">Reporte de Pagos</h2>
+            <p class="text-text-muted">Estado de cuenta, morosidad y conciliación de pagos</p>
+            <p class="text-sm text-text-muted mt-2">Próximamente</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { apiGet } from '@/lib/api';
+
+  async function loadEstudiantes() {
+    try {
+      const data = await apiGet('/api/admin/usuarios');
+      const estudiantes = data.usuarios.filter(u => u.rol === 'REPRESENTANTE');
+      const select = document.getElementById('select-estudiante');
+      for (const est of estudiantes) {
+        select.innerHTML += `<option value="${est.id}">${est.nombres} ${est.apellidos} (${est.email})</option>`;
+      }
+      document.getElementById('boletin-loading').classList.add('hidden');
+      document.getElementById('boletin-form').classList.remove('hidden');
+      document.getElementById('btn-ver-boletin').disabled = false;
+    } catch (err) {
+      document.getElementById('boletin-loading').textContent = 'Error al cargar: ' + err.message;
+    }
+  }
+
+  document.getElementById('btn-ver-boletin')?.addEventListener('click', () => {
+    const id = document.getElementById('select-estudiante').value;
+    if (id) window.location.href = `/representante/boletin?id=${id}`;
+  });
+
+  loadEstudiantes();
+</script>

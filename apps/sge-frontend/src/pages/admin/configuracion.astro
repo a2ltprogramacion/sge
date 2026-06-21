@@ -105,9 +105,9 @@ const user = Astro.locals.user as {
       ]);
 
       document.getElementById('nombre_plantel').value = config.nombre_plantel || '';
-      document.getElementById('telefono').value = config.telefono || '';
+      document.getElementById('telefono').value = config.telefono_contacto || config.telefono || '';
       document.getElementById('direccion').value = config.direccion || '';
-      document.getElementById('sistema_evaluacion').value = config.sistema_evaluacion || 'NUMERICO_20';
+      document.getElementById('sistema_evaluacion').value = config.sistema_evaluacion_por_defecto || config.sistema_evaluacion || 'NUMERICO_20';
 
       const periodoSelect = document.getElementById('periodo_id');
       const periodosList = periodos.periodos || periodos;
@@ -130,10 +130,9 @@ const user = Astro.locals.user as {
     try {
       const data = {
         nombre_plantel: document.getElementById('nombre_plantel').value,
-        periodo_id: parseInt(document.getElementById('periodo_id').value, 10),
-        sistema_evaluacion: document.getElementById('sistema_evaluacion').value,
-        telefono: document.getElementById('telefono').value,
+        telefono_contacto: document.getElementById('telefono').value,
         direccion: document.getElementById('direccion').value,
+        sistema_evaluacion_por_defecto: document.getElementById('sistema_evaluacion').value,
       };
 
       await apiFetch('/api/admin/configuracion', {

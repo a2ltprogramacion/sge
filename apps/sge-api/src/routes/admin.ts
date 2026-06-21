@@ -32,22 +32,24 @@ const crearUsuarioSchema = z.object({
 
 // GET /api/admin/usuarios - Listar usuarios
 adminRouter.get("/usuarios", authMiddleware(), requireRoles(["ADMINISTRADOR"]), async (c) => {
-  const db = c.env.DB;
-  if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
+  try {
+    const db = c.env.DB;
+    if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
 
-  const { results } = await db.prepare(
-    `SELECT u.id, u.email, u.rol, u.activo, u.created_at,
-            COALESCE(d.nombres, r.nombres, e.nombres, u.nombres) as nombres,
-            COALESCE(d.apellidos, r.apellidos, e.apellidos, u.apellidos) as apellidos,
-            e.cedula_escolar
-     FROM usuarios u
-     LEFT JOIN docentes d ON u.id = d.id
-     LEFT JOIN representantes r ON u.id = r.id
-     LEFT JOIN estudiantes e ON u.id = e.id
-     ORDER BY u.created_at DESC`
-  ).all();
+    const { results } = await db.prepare(
+      `SELECT u.id, u.email, u.rol, u.activo, u.created_at,
+              u.nombres, u.apellidos,
+              e.cedula_escolar
+       FROM usuarios u
+       LEFT JOIN estudiantes e ON u.id = e.id
+       ORDER BY u.created_at DESC`
+    ).all();
 
-  return c.json({ usuarios: results || [] });
+    return c.json({ usuarios: results || [] });
+  } catch (err: any) {
+    console.error("Error en GET /usuarios:", err);
+    throw rfc7807("Internal Server Error", 500, "Error al cargar usuarios: " + (err.message || err));
+  }
 });
 
 // PATCH /api/admin/usuarios/:id/toggle-activo - Suspender/activar usuario
@@ -105,15 +107,20 @@ adminRouter.post("/usuarios/crear", authMiddleware(), requireRoles(["ADMINISTRAD
 
 // GET /api/admin/configuracion - Obtener configuracion del plantel
 adminRouter.get("/configuracion", authMiddleware(), requireRoles(["ADMINISTRADOR"]), async (c) => {
-  const db = c.env.DB;
-  if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
+  try {
+    const db = c.env.DB;
+    if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
 
-  const config = await db.prepare(
-    `SELECT nombre_plantel, sistema_evaluacion_por_defecto, telefono_contacto, direccion
-     FROM institucion_config LIMIT 1`
-  ).bind().first<any>();
+    const config = await db.prepare(
+      `SELECT nombre as nombre_plantel, sistema_evaluacion_por_defecto, telefono as telefono_contacto, direccion
+       FROM institucion_config LIMIT 1`
+    ).bind().first<any>();
 
-  return c.json(config || {});
+    return c.json(config || {});
+  } catch (err: any) {
+    console.error("Error en GET /configuracion:", err);
+    throw rfc7807("Internal Server Error", 500, "Error al cargar configuracion: " + (err.message || err));
+  }
 });
 
 // PATCH /api/admin/configuracion - Actualizar configuracion
@@ -125,9 +132,11 @@ adminRouter.patch("/configuracion", authMiddleware(), requireRoles(["ADMINISTRAD
   const campos: string[] = [];
   const valores: any[] = [];
 
+  const colMap: Record<string, string> = { nombre_plantel: "nombre", telefono_contacto: "telefono" };
   for (const key of ["nombre_plantel", "sistema_evaluacion_por_defecto", "telefono_contacto", "direccion"]) {
+    const col = colMap[key] || key;
     if (body[key] !== undefined) {
-      campos.push(`${key} = ?`);
+      campos.push(`${col} = ?`);
       valores.push(body[key]);
     }
   }
@@ -145,14 +154,19 @@ adminRouter.patch("/configuracion", authMiddleware(), requireRoles(["ADMINISTRAD
 
 // GET /api/admin/periodos - Listar periodos academicos
 adminRouter.get("/periodos", authMiddleware(), requireRoles(["ADMINISTRADOR"]), async (c) => {
-  const db = c.env.DB;
-  if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
+  try {
+    const db = c.env.DB;
+    if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
 
-  const { results } = await db.prepare(
-    "SELECT id, nombre, activo, fecha_inicio, fecha_fin FROM periodos_academicos ORDER BY fecha_inicio DESC"
-  ).all();
+    const { results } = await db.prepare(
+      "SELECT id, nombre, activo, created_at as fecha_inicio, created_at as fecha_fin FROM periodos_academicos ORDER BY created_at DESC"
+    ).all();
 
-  return c.json({ periodos: results || [] });
+    return c.json({ periodos: results || [] });
+  } catch (err: any) {
+    console.error("Error en GET /periodos:", err);
+    throw rfc7807("Internal Server Error", 500, "Error al cargar periodos: " + (err.message || err));
+  }
 });
 
 export { adminRouter };

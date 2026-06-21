@@ -24,14 +24,14 @@ export type Bindings = {
   VAPID_SUBJECT: string;
 };
 
+import { HTTPException } from "hono/http-exception";
+
 const app = new Hono<{ Bindings: Bindings }>();
 
 // Middlewares globales de procesamiento
 app.use("*", logger());
 app.use("*", cors({
-  origin: (c.env.ENVIRONMENT === "production")
-    ? "https://sge.pages.dev" // Dominio real del frontend en producción
-    : "*",
+  origin: "https://sge-57o.pages.dev",
   allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowHeaders: ["Content-Type", "Authorization"],
   exposeHeaders: ["Content-Length"],
@@ -40,13 +40,18 @@ app.use("*", cors({
 
 // Manejo centralizado de errores del Servidor bajo estándar RFC 7807
 app.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    if (err.res) return err.getResponse();
+    return c.json({ title: "Error", status: err.status, detail: err.message }, err.status);
+  }
+  
   console.error("Internal API Error:", err);
   
   return c.json(
     {
       title: "Internal Server Error",
       status: 500,
-      detail: err.message || "Ha ocurrido un error inesperado en la infraestructura."
+      detail: "Ha ocurrido un error inesperado en la infraestructura."
     },
     500,
     { "Content-Type": "application/problem+json" }

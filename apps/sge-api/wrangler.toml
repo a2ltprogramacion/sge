@@ -11,7 +11,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ENVIRONMENT = "development"
 VAPID_SUBJECT = "mailto:admin@localhost"
-VAPID_PUBLIC_KEY = "BEl69b1deb4d3b7bad9bdd2b0d7b3dcb6df4a2a0f15ba41f2a3c9d19a18d1e45819b1deb4d3b7bad9bdd2b"
+VAPID_PUBLIC_KEY = "BEOJAh8KgvSDwMz-ATNCikkCzZsGs13MapKd9QLrZpP7tISEX7PBW26xNN9UZgyYZlI_GfrT6swSV8uZXI9q6y8"
 PUBLIC_API_URL = "http://localhost:8787"
 
 [[d1_databases]]
@@ -19,20 +19,13 @@ binding = "DB"
 database_name = "sge-db-prod"
 # ── IMPORTANTE ──────────────────────────────────────────────────────────────
 # Reemplazar con el UUID real de `wrangler d1 create sge-db-prod`:
-database_id = "local-dev-placeholder"
+database_id = "f6abcd9e-d40c-4a4c-bd57-f90ae6530f79"
 # ─────────────────────────────────────────────────────────────────────────────
 
 [[r2_buckets]]
 binding = "BUCKET_COMPROBANTES"
 bucket_name = "sge-comprobantes-dev"
 preview_bucket_name = "sge-comprobantes-dev-preview"
-
-[assets]
-binding = "ASSETS"
-directory = "../sge-frontend/dist"
-
-[observability]
-enabled = true
 
 # =============================================================================
 # Entorno: producción
@@ -47,24 +40,15 @@ compatibility_flags = ["nodejs_compat"]
 ENVIRONMENT = "production"
 VAPID_SUBJECT = "mailto:admin@a2lt-soluciones.com"
 # VAPID_PUBLIC_KEY no es secreto — puede ir aquí
-VAPID_PUBLIC_KEY = "BEl69b1deb4d3b7bad9bdd2b0d7b3dcb6df4a2a0f15ba41f2a3c9d19a18d1e45819b1deb4d3b7bad9bdd2b"
-PUBLIC_API_URL = "https://sge-api-prod.your-subdomain.workers.dev"
+VAPID_PUBLIC_KEY = "BEOJAh8KgvSDwMz-ATNCikkCzZsGs13MapKd9QLrZpP7tISEX7PBW26xNN9UZgyYZlI_GfrT6swSV8uZXI9q6y8"
+PUBLIC_API_URL = "https://sge-api-prod.a2ltprogramacion.workers.dev"
 
-[env.production.d1_databases]
+[[env.production.d1_databases]]
 binding = "DB"
 database_name = "sge-db-prod"
-# ── REEMPLAZAR ──────────────────────────────────────────────────────────────
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "f6abcd9e-d40c-4a4c-bd57-f90ae6530f79"
 # ─────────────────────────────────────────────────────────────────────────────
 
-[env.production.r2_buckets]
-binding = "BUCKET_COMPROBANTES"
-bucket_name = "sge-comprobantes-prod"
-preview_bucket_name = "sge-comprobantes-prod-preview"
-
-[env.production.assets]
-binding = "ASSETS"
-directory = "../sge-frontend/dist"
 
 [env.production.observability]
 enabled = true

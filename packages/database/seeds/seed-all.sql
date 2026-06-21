@@ -22,9 +22,9 @@ INSERT INTO institucion_config (
 
 -- 2. USUARIOS DE PRUEBA (Hash PBKDF2-SHA256 real, Salt = UUID)
 INSERT INTO usuarios (id, email, password_hash, rol, nombres, apellidos, telefono, activo) VALUES 
-('11111111-1111-4111-a111-111111111111', 'admin@bolivar.edu.ve', 'f920fdf91902ba14a87265a7f998bcbe554a9d70183ca62d5eb391f97c0c16fb', 'ADMINISTRADOR', 'Alejandro', 'Lovera', '+58-412-1111111', 1),
-('22222222-2222-4222-a222-222222222222', 'docente@bolivar.edu.ve', '491fba387d8df98dbefb494677764d7de52f9b8032b4b3b890ab62b08fa11cd9', 'DOCENTE', 'María Carmen', 'Rodríguez', '+58-412-2222222', 1),
-('33333333-3333-4333-a333-333333333333', 'representante@bolivar.edu.ve', '89a07cdcbbfb9d4f9f658a3a0e6e737bd488a09b3074d6e9f69b1b1ba681b9e0', 'REPRESENTANTE', 'Carlos Eduardo', 'Pérez', '+58-412-3333333', 1);
+('11111111-1111-4111-a111-111111111111', 'admin@bolivar.edu.ve', '3bba4461b508e334e039088b1ce3886d40ed8177055fa3b0ec6a6be3cabbd203', 'ADMINISTRADOR', 'Alejandro', 'Lovera', '+58-412-1111111', 1),
+('22222222-2222-4222-a222-222222222222', 'docente@bolivar.edu.ve', '6d6273edda7f5d017e99e427867259e0661fe1b89b793d5bd87f6146b58bfec2', 'DOCENTE', 'María Carmen', 'Rodríguez', '+58-412-2222222', 1),
+('33333333-3333-4333-a333-333333333333', 'representante@bolivar.edu.ve', '565ad3539a8fab21820e5ea7b5885bdcba19a2d4eeb2855f6028d0cbd9197508', 'REPRESENTANTE', 'Carlos Eduardo', 'Pérez', '+58-412-3333333', 1);
 
 -- 3. PERFIL DOCENTE
 INSERT INTO docentes (id, cedula, especialidad) VALUES 

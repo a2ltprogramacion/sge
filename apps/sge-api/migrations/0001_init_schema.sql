@@ -82,12 +82,12 @@ CREATE TABLE IF NOT EXISTS secciones (
 -- 8. MATRÍCULAS
 CREATE TABLE IF NOT EXISTS matriculas (
     id TEXT PRIMARY KEY CHECK(length(id) = 36),
-    student_id TEXT NOT NULL REFERENCES estudiantes(id) ON DELETE RESTRICT,
+    estudiante_id TEXT NOT NULL REFERENCES estudiantes(id) ON DELETE RESTRICT,
     seccion_id TEXT NOT NULL REFERENCES secciones(id) ON DELETE RESTRICT,
     estado TEXT CHECK( estado IN ('ACTIVO', 'RETIRADO', 'SUSPENDIDO') ) NOT NULL DEFAULT 'ACTIVO',
     status_pago TEXT CHECK( status_pago IN ('SOLVENTE', 'CON_DEUDA', 'EXENTO') ) NOT NULL DEFAULT 'CON_DEUDA',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(student_id, seccion_id)
+    UNIQUE(estudiante_id, seccion_id)
 );
 
 -- 9. ASIGNATURAS

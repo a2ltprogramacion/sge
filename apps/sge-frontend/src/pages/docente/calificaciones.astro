@@ -3,17 +3,13 @@ import Layout from '@/layouts/Layout.astro';
 import Navigation from '@/components/navigation/Navigation.astro';
 import { apiGet, apiPost } from '@/lib/api';
 
-interface Props {
-  user: {
-    id: string;
-    email: string;
-    rol: string;
-    nombres: string;
-    apellidos: string;
-  };
-}
-
-const { user } = Astro.props;
+const user = Astro.locals.user as {
+  id: string;
+  email: string;
+  rol: string;
+  nombres: string;
+  apellidos: string;
+};
 
 const secciones = await apiGet('/api/docente/secciones');
 const planes = await apiGet('/api/docente/planes');

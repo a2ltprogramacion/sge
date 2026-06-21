@@ -32,5 +32,5 @@ export async function generateToken(payload: Omit<JWTPayload, "exp">, secret: st
  * @returns El payload decodificado si es válido, o lanza un error.
  */
 export async function verifyToken(token: string, secret: string): Promise<JWTPayload> {
-  return verify(token, secret) as unknown as Promise<JWTPayload>;
+  return verify(token, secret, "HS256") as unknown as Promise<JWTPayload>;
 }

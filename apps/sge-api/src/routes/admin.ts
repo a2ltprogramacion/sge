@@ -169,4 +169,97 @@ adminRouter.get("/periodos", authMiddleware(), requireRoles(["ADMINISTRADOR"]), 
   }
 });
 
+// GET /api/admin/sistemas-evaluacion - Listar sistemas de evaluación
+adminRouter.get("/sistemas-evaluacion", authMiddleware(), requireRoles(["ADMINISTRADOR"]), async (c) => {
+  try {
+    const db = c.env.DB;
+    if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
+
+    const { results } = await db.prepare(
+      "SELECT id, codigo, nombre, descripcion, tipo, configuracion, activo FROM sistemas_evaluacion ORDER BY nombre ASC"
+    ).all();
+
+    return c.json({ sistemas: results || [] });
+  } catch (err: any) {
+    console.error("Error en GET /sistemas-evaluacion:", err);
+    throw rfc7807("Internal Server Error", 500, "Error al cargar sistemas: " + (err.message || err));
+  }
+});
+
+// POST /api/admin/sistemas-evaluacion - Crear sistema personalizado
+adminRouter.post("/sistemas-evaluacion", authMiddleware(), requireRoles(["ADMINISTRADOR"]), async (c) => {
+  try {
+    const db = c.env.DB;
+    if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
+
+    const body = await c.req.json().catch(() => ({}));
+    if (!body.nombre || !body.tipo) {
+      throw rfc7807("Bad Request", 400, "nombre y tipo son obligatorios.");
+    }
+
+    const id = crypto.randomUUID();
+    const codigo = `CUSTOM_${id.substring(0, 8).toUpperCase()}`;
+    await db.prepare(
+      `INSERT INTO sistemas_evaluacion (id, codigo, nombre, descripcion, tipo, configuracion)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(id, codigo, body.nombre, body.descripcion || null, body.tipo, JSON.stringify(body.configuracion || {})).run();
+
+    return c.json({ success: true, id, codigo }, 201);
+  } catch (err: any) {
+    console.error("Error en POST /sistemas-evaluacion:", err);
+    throw rfc7807("Internal Server Error", 500, "Error al crear sistema: " + (err.message || err));
+  }
+});
+
+// DELETE /api/admin/sistemas-evaluacion/:id - Eliminar sistema personalizado
+adminRouter.delete("/sistemas-evaluacion/:id", authMiddleware(), requireRoles(["ADMINISTRADOR"]), async (c) => {
+  try {
+    const db = c.env.DB;
+    if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
+
+    const sistemaId = c.req.param("id");
+    const sistema = await db.prepare("SELECT id, codigo FROM sistemas_evaluacion WHERE id = ? LIMIT 1").bind(sistemaId).first<any>();
+    if (!sistema) throw rfc7807("Not Found", 404, "Sistema no encontrado.");
+    if (sistema.codigo.startsWith("NUMERICO_20") || sistema.codigo.startsWith("CUALITATIVO_AE")) {
+      throw rfc7807("Forbidden", 403, "No se puede eliminar un sistema por defecto.");
+    }
+
+    await db.prepare("DELETE FROM sistemas_evaluacion WHERE id = ?").bind(sistemaId).run();
+    return c.json({ success: true });
+  } catch (err: any) {
+    if (err instanceof HTTPException) throw err;
+    throw rfc7807("Internal Server Error", 500, "Error al eliminar sistema: " + (err.message || err));
+  }
+});
+
+// PATCH /api/admin/sistemas-evaluacion/:id - Actualizar sistema
+adminRouter.patch("/sistemas-evaluacion/:id", authMiddleware(), requireRoles(["ADMINISTRADOR"]), async (c) => {
+  try {
+    const db = c.env.DB;
+    if (!db) throw rfc7807("Internal Server Error", 500, "Base de datos no disponible.");
+
+    const sistemaId = c.req.param("id");
+    const body = await c.req.json().catch(() => ({}));
+
+    const updates: string[] = [];
+    const values: any[] = [];
+    for (const key of ["nombre", "descripcion", "tipo", "configuracion", "activo"]) {
+      if (body[key] !== undefined) {
+        updates.push(`${key} = ?`);
+        values.push(typeof body[key] === "object" ? JSON.stringify(body[key]) : body[key]);
+      }
+    }
+    if (updates.length === 0) throw rfc7807("Bad Request", 400, "No hay campos para actualizar.");
+
+    await db.prepare(
+      `UPDATE sistemas_evaluacion SET ${updates.join(", ")} WHERE id = ?`
+    ).bind(...values, sistemaId).run();
+
+    return c.json({ success: true });
+  } catch (err: any) {
+    if (err instanceof HTTPException) throw err;
+    throw rfc7807("Internal Server Error", 500, "Error al actualizar sistema: " + (err.message || err));
+  }
+});
+
 export { adminRouter };

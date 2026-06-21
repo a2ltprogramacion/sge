@@ -64,6 +64,66 @@ const user = Astro.locals.user as {
         </div>
       </div>
 
+      <div class="card mb-8" id="sistemas-section">
+        <div class="card-header flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-text-main">Sistemas de Evaluación</h2>
+          <button id="btn-nuevo-sistema" class="btn btn-primary btn-sm">+ Nuevo</button>
+        </div>
+        <div class="card-body">
+          <div id="sistemas-loading" class="text-sm text-text-muted">Cargando sistemas...</div>
+          <div id="sistemas-table-wrapper" class="hidden overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="text-left text-text-muted text-sm">
+                  <th class="pb-3 font-medium">Nombre</th>
+                  <th class="pb-3 font-medium">Tipo</th>
+                  <th class="pb-3 font-medium">Estado</th>
+                  <th class="pb-3 font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="sistemas-tbody" class="divide-y divide-border"></tbody>
+            </table>
+          </div>
+          <div id="sistemas-empty" class="hidden text-center py-4 text-text-muted">
+            <p>No hay sistemas personalizados. Crea uno nuevo.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal nuevo sistema de evaluación -->
+      <div id="modal-sistema" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="card w-full max-w-md mx-auto">
+          <div class="card-header flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-text-main" id="modal-sistema-title">Nuevo Sistema de Evaluación</h2>
+            <button id="btn-cerrar-modal-sistema" class="text-text-muted hover:text-text-main">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <form id="form-sistema" class="card-body space-y-4">
+            <div>
+              <label class="label" for="input-sis-nombre">Nombre del Sistema</label>
+              <input id="input-sis-nombre" type="text" class="input w-full" required placeholder="Ej: Escala Personalizada" />
+            </div>
+            <div>
+              <label class="label" for="input-sis-descripcion">Descripción</label>
+              <textarea id="input-sis-descripcion" class="input w-full" rows="2" placeholder="Opcional"></textarea>
+            </div>
+            <div>
+              <label class="label" for="input-sis-tipo">Tipo</label>
+              <select id="input-sis-tipo" class="input w-full" required>
+                <option value="NUMERICO">Numérico</option>
+                <option value="CUALITATIVO">Cualitativo (A–E)</option>
+              </select>
+            </div>
+            <div id="modal-sistema-error" class="hidden text-sm text-error-600"></div>
+            <div class="flex justify-end gap-3">
+              <button type="button" id="btn-cancelar-sistema" class="btn btn-secondary">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div id="loading-state" class="text-center py-8 text-text-muted">
         <p>Cargando configuración...</p>
       </div>
@@ -150,4 +210,87 @@ const user = Astro.locals.user as {
   });
 
   loadConfig();
+
+  // === Sistemas de Evaluación ===
+  const sistemasTbody = document.getElementById('sistemas-tbody');
+  const sistemasLoading = document.getElementById('sistemas-loading');
+  const sistemasTableWrapper = document.getElementById('sistemas-table-wrapper');
+  const sistemasEmpty = document.getElementById('sistemas-empty');
+
+  function renderSistemas(sistemas) {
+    const custom = sistemas.filter(s => s.codigo.startsWith('CUSTOM_'));
+    if (custom.length === 0) {
+      sistemasTableWrapper.classList.add('hidden');
+      sistemasEmpty.classList.remove('hidden');
+      return;
+    }
+    sistemasEmpty.classList.add('hidden');
+    sistemasTableWrapper.classList.remove('hidden');
+    sistemasTbody.innerHTML = custom.map(s => `
+      <tr>
+        <td class="py-3 font-medium text-text-main">${s.nombre} <span class="text-xs text-text-muted">${s.descripcion ? '- ' + s.descripcion : ''}</span></td>
+        <td class="py-3 text-text-main">${s.tipo}</td>
+        <td class="py-3">${s.activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-error">Inactivo</span>'}</td>
+        <td class="py-3">
+          <button class="btn btn-sm btn-outline-error eliminar-sistema" data-id="${s.id}">Eliminar</button>
+        </td>
+      </tr>
+    `).join('');
+
+    sistemasTbody.querySelectorAll('.eliminar-sistema').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar este sistema de evaluación?')) return;
+        try {
+          await apiFetch(`/api/admin/sistemas-evaluacion/${btn.dataset.id}`, { method: 'DELETE' });
+          loadSistemas();
+        } catch (err) { alert('Error: ' + err.message); }
+      });
+    });
+  }
+
+  async function loadSistemas() {
+    try {
+      const data = await apiGet('/api/admin/sistemas-evaluacion');
+      renderSistemas(data.sistemas);
+      // Populate dropdown
+      const select = document.getElementById('sistema_evaluacion');
+      const currentVal = select.value;
+      select.innerHTML = data.sistemas.map(s =>
+        `<option value="${s.codigo}" ${s.codigo === currentVal ? 'selected' : ''}>${s.nombre}</option>`
+      ).join('');
+    } catch (err) {
+      sistemasLoading.textContent = 'Error: ' + err.message;
+    }
+  }
+
+  // Modal sistema
+  const modalSistema = document.getElementById('modal-sistema');
+  document.getElementById('btn-nuevo-sistema').addEventListener('click', () => {
+    document.getElementById('form-sistema').reset();
+    document.getElementById('modal-sistema-error').classList.add('hidden');
+    modalSistema.classList.remove('hidden');
+  });
+  const cerrarSistema = () => modalSistema.classList.add('hidden');
+  document.getElementById('btn-cerrar-modal-sistema').addEventListener('click', cerrarSistema);
+  document.getElementById('btn-cancelar-sistema').addEventListener('click', cerrarSistema);
+  modalSistema.addEventListener('click', (e) => { if (e.target === modalSistema) cerrarSistema(); });
+
+  document.getElementById('form-sistema').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const modalError = document.getElementById('modal-sistema-error');
+    modalError.classList.add('hidden');
+    const data = {
+      nombre: document.getElementById('input-sis-nombre').value.trim(),
+      descripcion: document.getElementById('input-sis-descripcion').value.trim(),
+      tipo: document.getElementById('input-sis-tipo').value,
+    };
+    if (!data.nombre) { modalError.textContent = 'El nombre es obligatorio.'; modalError.classList.remove('hidden'); return; }
+    try {
+      await apiFetch('/api/admin/sistemas-evaluacion', { method: 'POST', body: JSON.stringify(data) });
+      cerrarSistema();
+      loadSistemas();
+    } catch (err) { modalError.textContent = 'Error: ' + err.message; modalError.classList.remove('hidden'); }
+  });
+
+  loadSistemas();
 </script>

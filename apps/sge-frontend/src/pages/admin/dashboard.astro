@@ -107,6 +107,21 @@ const user = Astro.locals.user as {
         </div>
       </div>
 
+      <!-- Modal detalle sección -->
+      <div id="modal-detalle-seccion" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="card w-full max-w-2xl mx-auto">
+          <div class="card-header flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-text-main" id="modal-seccion-titulo">Detalle de Sección</h2>
+            <button id="btn-cerrar-modal-seccion" class="text-text-muted hover:text-text-main">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <div class="card-body" id="modal-seccion-contenido">
+            <p class="text-text-muted">Cargando detalle...</p>
+          </div>
+        </div>
+      </div>
+
       <div id="loading-state" class="text-center py-8 text-text-muted">
         <p>Cargando dashboard...</p>
       </div>
@@ -218,8 +233,8 @@ const user = Astro.locals.user as {
       return;
     }
     empty.classList.add('hidden');
-    tbody.innerHTML = secciones.map(s => `
-      <tr class="hover:bg-bg-alt">
+    tbody.innerHTML = secciones.map((s, idx) => `
+      <tr class="hover:bg-bg-alt cursor-pointer" data-seccion-idx="${idx}" data-seccion="${s.seccion}">
         <td class="px-4 py-3 font-medium text-text-main">${s.seccion}</td>
         <td class="px-4 py-3 text-center text-text-main">${s.total_alumnos}</td>
         <td class="px-4 py-3 text-center text-error-600 font-medium">${s.alumnos_morosos}</td>
@@ -229,6 +244,37 @@ const user = Astro.locals.user as {
         </td>
       </tr>
     `).join('');
+
+    tbody.querySelectorAll('tr[data-seccion-idx]').forEach(row => {
+      row.addEventListener('click', () => {
+        const idx = parseInt(row.dataset.seccionIdx);
+        const data = secciones[idx];
+        if (!data) return;
+        document.getElementById('modal-seccion-titulo').textContent = `Detalle: ${data.seccion}`;
+        document.getElementById('modal-seccion-contenido').innerHTML = `
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="card bg-bg-alt p-4 text-center">
+              <p class="text-2xl font-bold text-text-main">${data.total_alumnos}</p>
+              <p class="text-sm text-text-muted">Total Alumnos</p>
+            </div>
+            <div class="card bg-bg-alt p-4 text-center">
+              <p class="text-2xl font-bold text-error-600">${data.alumnos_morosos}</p>
+              <p class="text-sm text-text-muted">Morosos</p>
+            </div>
+            <div class="card bg-bg-alt p-4 text-center">
+              <p class="text-2xl font-bold text-success-600">${data.alumnos_solventes}</p>
+              <p class="text-sm text-text-muted">Solventes</p>
+            </div>
+            <div class="card bg-bg-alt p-4 text-center">
+              <p class="text-2xl font-bold ${data.porcentaje_solvencia >= 80 ? 'text-success-600' : data.porcentaje_solvencia >= 50 ? 'text-warning-600' : 'text-error-600'}">${data.porcentaje_solvencia}%</p>
+              <p class="text-sm text-text-muted">% Solvencia</p>
+            </div>
+          </div>
+          <p class="text-sm text-text-muted text-center">Gestiona pagos y morosidad desde la sección de pagos próximamente.</p>
+        `;
+        document.getElementById('modal-detalle-seccion').classList.remove('hidden');
+      });
+    });
   }
 
   async function loadDashboard() {
@@ -253,6 +299,11 @@ const user = Astro.locals.user as {
       showError('Error al cargar dashboard: ' + err.message);
     }
   }
+
+  // Modal detalle sección
+  const modalSeccion = document.getElementById('modal-detalle-seccion');
+  document.getElementById('btn-cerrar-modal-seccion')?.addEventListener('click', () => modalSeccion.classList.add('hidden'));
+  modalSeccion?.addEventListener('click', (e) => { if (e.target === modalSeccion) modalSeccion.classList.add('hidden'); });
 
   loadDashboard();
 </script>

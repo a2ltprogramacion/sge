@@ -1,0 +1,213 @@
+---
+import Layout from '@/layouts/Layout.astro';
+---
+
+<Layout title="Iniciar Sesión" description="Acceso al Sistema de Gestión Escolar">
+  <main id="main-content" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12">
+    <div class="w-full max-w-md px-6">
+      <div class="card animate-in">
+        <div class="card-header text-center">
+          <svg class="w-12 h-12 mx-auto text-primary-600 mb-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
+          </svg>
+          <h1 class="text-2xl font-bold text-text-main mt-4">Sistema de Gestión Escolar</h1>
+          <p class="text-text-muted mt-1">Iniciar sesión para acceder al panel</p>
+        </div>
+
+        <div class="card-body">
+          <!-- Error Message -->
+          <div id="error-container" class="hidden mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+            <div class="flex items-center gap-2" role="alert">
+              <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm1-9a1 1 0 01-2 0V4a1 1 0 012 0h1a1 1 0 011 1v2H8a1 1 0 000 2h2.586l-1.293 1.293a1 1 0 001.414 1.414L16 9.414V16a2 2 0 002 2h4a2 2 0 002-2V7.414l1.707 1.707a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414-1.414z" clip-rule="evenodd"/>
+              </svg>
+              <span id="error-message" class="text-sm font-medium"></span>
+            </div>
+          </div>
+
+          <!-- Login Form -->
+          <form id="login-form" class="space-y-5" novalidate>
+            <div>
+              <label for="email" class="label">Correo Electrónico</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                class="input"
+                placeholder="usuario@ejemplo.edu.ve"
+                autocomplete="email"
+                required
+                aria-describedby="email-error"
+              />
+              <p id="email-error" class="sr-only" aria-live="polite"></p>
+            </div>
+
+            <div>
+              <label for="password" class="label">Contraseña</label>
+              <div class="relative">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  class="input pr-10"
+                  placeholder="••••••••"
+                  autocomplete="current-password"
+                  required
+                  aria-describedby="password-error"
+                />
+                <button
+                  type="button"
+                  id="toggle-password"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main"
+                  aria-label="Mostrar/ocultar contraseña"
+                >
+                  <svg id="eye-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-72-7z" />
+                  </svg>
+                  <svg id="eye-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 01.105-3.997" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+              </div>
+              <p id="password-error" class="sr-only" aria-live="polite"></p>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary w-full py-3 text-base"
+              id="submit-btn"
+            >
+              <span id="btn-text">Iniciar Sesión</span>
+              <svg id="btn-spinner" class="w-5 h-5 animate-spin hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </form>
+
+          <!-- Demo Credentials Info -->
+          <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-900/20 dark:border-blue-800">
+            <h3 class="font-medium text-blue-800 dark:text-blue-200 mb-2">Credenciales de Prueba</h3>
+            <div class="grid grid-cols-3 gap-2 text-sm text-blue-700 dark:text-blue-300">
+              <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded">
+                <p class="font-medium">Admin</p>
+                <p>admin@bolivar.edu.ve</p>
+                <p>Admin1234*</p>
+              </div>
+              <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded">
+                <p class="font-medium">Docente</p>
+                <p>docente@bolivar.edu.ve</p>
+                <p>Admin1234*</p>
+              </div>
+              <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded">
+                <p class="font-medium">Representante</p>
+                <p>rep@bolivar.edu.ve</p>
+                <p>Admin1234*</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-center text-sm text-text-muted mt-6">
+        Sistema de Gestión Escolar &copy; 2026 A2LT Soluciones
+      </p>
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  import { login, logout } from '@/lib/api';
+
+  const form = document.getElementById('login-form') as HTMLFormElement;
+  const emailInput = document.getElementById('email') as HTMLInputElement;
+  const passwordInput = document.getElementById('password') as HTMLInputElement;
+  const togglePassword = document.getElementById('toggle-password') as HTMLButtonElement;
+  const eyeOpen = document.getElementById('eye-open') as SVGElement;
+  const eyeClosed = document.getElementById('eye-closed') as SVGElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const btnText = document.getElementById('btn-text') as HTMLElement;
+  const btnSpinner = document.getElementById('btn-spinner') as SVGElement;
+  const errorContainer = document.getElementById('error-container') as HTMLDivElement;
+  const errorMessage = document.getElementById('error-message') as HTMLElement;
+  const formElement = document.getElementById('login-form') as HTMLFormElement;
+
+  // Toggle password visibility
+  togglePassword.addEventListener('click', () => {
+    const isPassword = passwordInput.type === 'password';
+    passwordInput.type = isPassword ? 'text' : 'password';
+    eyeOpen.classList.toggle('hidden', !isPassword);
+    eyeClosed.classList.toggle('hidden', isPassword);
+    togglePassword.setAttribute('aria-label', isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  });
+
+  // Show error message
+  function showError(message: string) {
+    errorMessage.textContent = message;
+    errorContainer.classList.remove('hidden');
+  }
+
+  // Hide error
+  function hideError() {
+    errorContainer.classList.add('hidden');
+  }
+
+  // Set loading state
+  function setLoading(loading: boolean) {
+    const btn = document.getElementById('submit-btn') as HTMLButtonElement;
+    const btnText = document.getElementById('btn-text') as HTMLElement;
+    const btnSpinner = document.getElementById('btn-spinner') as SVGElement;
+    
+    if (loading) {
+      btn.disabled = true;
+      document.getElementById('btn-text')!.textContent = 'Iniciando sesión...';
+      document.getElementById('btn-spinner')!.classList.remove('hidden');
+    } else {
+      btn.disabled = false;
+      document.getElementById('btn-text')!.textContent = 'Iniciar Sesión';
+      document.getElementById('btn-spinner')!.classList.add('hidden');
+    }
+  }
+
+  // Redirect based on role
+  function redirectByRole(rol: string) {
+    const routes: Record<string, string> = {
+      ADMINISTRADOR: '/admin/dashboard',
+      DOCENTE: '/docente/secciones',
+      REPRESENTANTE: '/representante/boletin',
+    };
+    window.location.href = routes[rol] || '/';
+  }
+
+  // Handle form submit
+  formElement.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideError();
+    setLoading(true);
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!email || !password) {
+      showError('Por favor complete todos los campos');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Importar dinámicamente el módulo de API
+      const { login } = await import('/lib/api');
+      
+      const response = await login({ email, password });
+      
+      // Redirección según rol
+      redirectByRole(response.rol);
+      
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error desconocido al iniciar sesión';
+      showError(message);
+      setLoading(false);
+    }
+  });
+</script>

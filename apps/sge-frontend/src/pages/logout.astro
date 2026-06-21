@@ -1,0 +1,35 @@
+---
+import Layout from '@/layouts/Layout.astro';
+---
+
+<Layout title="Cerrando Sesión" description="Cerrando sesión del Sistema de Gestión Escolar">
+  <main id="main-content" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12">
+    <div class="w-full max-w-md px-6">
+      <div class="card animate-in text-center">
+        <div class="card-header">
+          <div class="w-16 h-12 mx-auto mb-4 text-primary-600">
+            <svg class="animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-text-main mb-2">Cerrando Sesión</h1>
+          <p class="text-text-muted">Limpiando sesión y redirigiendo...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script is:inline>
+  // Limpiar localStorage
+  localStorage.removeItem('sge_token');
+  
+  // Limpiar cookie (expirar inmediatamente)
+  document.cookie = 'sge_token=; path=/; max-age=0; SameSite=Strict; Secure';
+  
+  // Redirigir a login después de limpiar
+  setTimeout(() => {
+    window.location.href = '/login?logout=success';
+  }, 500);
+</script>
